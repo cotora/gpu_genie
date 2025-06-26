@@ -1,0 +1,221 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.changes.outputs.frontend }}
+      backend: ${{ steps.changes.outputs.backend }}
+      terraform: ${{ steps.changes.outputs.terraform }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Detect changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+            backend:
+              - 'backend/**'
+            terraform:
+              - 'terraform/**'
+
+  frontend-checks:
+    name: Frontend Checks
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ./frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Prettier check
+        run: npm run format:check
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Check TypeScript types
+        run: npm run type-check
+
+      - name: Build check
+        run: npm run build
+        env:
+          NEXT_PUBLIC_AWS_REGION: us-east-1
+          NEXT_PUBLIC_API_GATEWAY_URL: https://dummy.execute-api.us-east-1.amazonaws.com/dev
+          NEXT_PUBLIC_COGNITO_USER_POOL_ID: dummy
+          NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID: dummy
+          NEXT_PUBLIC_COGNITO_IDENTITY_POOL_ID: dummy
+
+  backend-checks:
+    name: Backend Checks
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    defaults:
+      run:
+        working-directory: ./backend/lambda
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ./backend/lambda/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Prettier check
+        run: npm run format:check
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+        env:
+          NODE_ENV: test
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./backend/lambda/coverage/lcov.info
+          flags: backend
+          name: backend-coverage
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Build check
+        run: npm run build
+
+  terraform-checks:
+    name: Terraform Checks
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.terraform == 'true'
+    defaults:
+      run:
+        working-directory: ./terraform
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ~1.5
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+
+      - name: Init TFLint
+        run: tflint --init
+
+      - name: Run TFLint
+        run: tflint --format compact
+
+  comment-pr:
+    name: Comment PR
+    runs-on: ubuntu-latest
+    needs: [frontend-checks, backend-checks, terraform-checks]
+    if: always() && github.event_name == 'pull_request'
+
+    steps:
+      - name: Comment PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && comment.body.includes('🔍 PR Checks Summary')
+            );
+
+            const frontendStatus = '${{ needs.frontend-checks.result }}';
+            const backendStatus = '${{ needs.backend-checks.result }}';
+            const terraformStatus = '${{ needs.terraform-checks.result }}';
+
+            const getStatusEmoji = (status) => {
+              switch(status) {
+                case 'success': return '✅';
+                case 'failure': return '❌';
+                case 'skipped': return '⏭️';
+                case 'cancelled': return '🚫';
+                default: return '⏸️';
+              }
+            };
+
+            const body = `🔍 **PR Checks Summary**
+
+            | Component | Status | Result |
+            |-----------|--------|--------|
+            | Frontend | ${getStatusEmoji(frontendStatus)} | ${frontendStatus} |
+            | Backend | ${getStatusEmoji(backendStatus)} | ${backendStatus} |
+            | Terraform | ${getStatusEmoji(terraformStatus)} | ${terraformStatus} |
+
+            ${frontendStatus === 'failure' || backendStatus === 'failure' || terraformStatus === 'failure' 
+              ? '❌ Some checks failed. Please review the failed jobs above.' 
+              : '✅ All checks passed! Ready for review.'}
+
+            ---
+            *Last updated: ${new Date().toISOString()}*`;
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }

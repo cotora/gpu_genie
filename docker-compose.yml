@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # DynamoDB Local
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    container_name: gpu-genie-dynamodb
+    ports:
+      - "8000:8000"
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-inMemory"]
+    working_dir: /home/dynamodblocal
+
+  # DynamoDB Admin UI
+  dynamodb-admin:
+    image: aaronshaf/dynamodb-admin:latest
+    container_name: gpu-genie-dynamodb-admin
+    ports:
+      - "8001:8001"
+    environment:
+      - DYNAMO_ENDPOINT=http://dynamodb:8000
+    depends_on:
+      - dynamodb
+
+  # Lambda API (Node.js)
+  api:
+    build:
+      context: ./backend/lambda
+      dockerfile: Dockerfile.dev
+    container_name: gpu-genie-api
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - AWS_REGION=us-east-1
+      - DYNAMODB_ENDPOINT=http://dynamodb:8000
+      - RESERVATIONS_TABLE=gpu-genie-reservations-dev
+      - USERS_TABLE=gpu-genie-users-dev
+      - GPU_SERVERS_TABLE=gpu-genie-gpu-servers-dev
+      - AWS_ACCESS_KEY_ID=dummy
+      - AWS_SECRET_ACCESS_KEY=dummy
+    volumes:
+      - ./backend/lambda/src:/app/src
+      - ./backend/lambda/package.json:/app/package.json
+      - /app/node_modules
+    depends_on:
+      - dynamodb
+    command: ["npm", "run", "dev"]
+
+  # Frontend (Next.js)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: gpu-genie-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_AWS_REGION=us-east-1
+      - NEXT_PUBLIC_API_GATEWAY_URL=http://localhost:3001
+      - NEXT_PUBLIC_COGNITO_USER_POOL_ID=dummy
+      - NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID=dummy
+      - NEXT_PUBLIC_COGNITO_IDENTITY_POOL_ID=dummy
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/package.json:/app/package.json
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - api
+    command: ["npm", "run", "dev"]
+
+  # DynamoDB table initialization
+  dynamodb-init:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile
+    container_name: gpu-genie-dynamodb-init
+    environment:
+      - AWS_REGION=us-east-1
+      - DYNAMODB_ENDPOINT=http://dynamodb:8000
+      - AWS_ACCESS_KEY_ID=dummy
+      - AWS_SECRET_ACCESS_KEY=dummy
+    volumes:
+      - ./scripts:/app/scripts
+    depends_on:
+      - dynamodb
+    command: ["node", "/app/scripts/init-dynamodb.js"]
+
+volumes:
+  dynamodb-data:
