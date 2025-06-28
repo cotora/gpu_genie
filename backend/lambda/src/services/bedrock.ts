@@ -5,8 +5,8 @@ export class BedrockService {
   private client: BedrockRuntimeClient
 
   constructor() {
-    this.client = new BedrockRuntimeClient({ 
-      region: process.env.AWS_REGION || 'us-east-1' 
+    this.client = new BedrockRuntimeClient({
+      region: process.env.AWS_REGION || 'us-east-1',
     })
   }
 
@@ -18,12 +18,13 @@ export class BedrockService {
       return {
         priority: mockPriority,
         reasoning: `開発環境でのモック判定。ユーザー優先度: ${request.user.priority}, 要求: ${request.reservation.parsedRequest.gpuType} x ${request.reservation.parsedRequest.quantity}台, ${request.reservation.parsedRequest.duration}時間使用。総合評価により${mockPriority}点としました。`,
-        recommendation: mockPriority >= 70 ? 'approve' : mockPriority >= 40 ? 'request_confirmation' : 'reject'
+        recommendation:
+          mockPriority >= 70 ? 'approve' : mockPriority >= 40 ? 'request_confirmation' : 'reject',
       }
     }
 
     const prompt = this.buildPriorityPrompt(request)
-    
+
     try {
       const command = new InvokeModelCommand({
         modelId: 'anthropic.claude-3-sonnet-20240229-v1:0',
@@ -33,35 +34,36 @@ export class BedrockService {
           messages: [
             {
               role: 'user',
-              content: prompt
-            }
-          ]
+              content: prompt,
+            },
+          ],
         }),
         contentType: 'application/json',
-        accept: 'application/json'
+        accept: 'application/json',
       })
 
       const response = await this.client.send(command)
       const responseBody = JSON.parse(new TextDecoder().decode(response.body))
-      
+
       return this.parsePriorityResponse(responseBody.content[0].text)
     } catch (error) {
       console.error('Bedrock API error:', error)
-      
+
       return {
         priority: 50,
         reasoning: 'AI判定でエラーが発生したため、デフォルト優先度を適用しました。',
-        recommendation: 'request_confirmation'
+        recommendation: 'request_confirmation',
       }
     }
   }
 
   private buildPriorityPrompt(request: PriorityRequest): string {
     const { reservation, user, conflictingReservations } = request
-    
-    const conflictInfo = conflictingReservations && conflictingReservations.length > 0
-      ? `競合する予約: ${conflictingReservations.length}件`
-      : '競合する予約なし'
+
+    const conflictInfo =
+      conflictingReservations && conflictingReservations.length > 0
+        ? `競合する予約: ${conflictingReservations.length}件`
+        : '競合する予約なし'
 
     return `
 GPU予約システムの優先度判定を行ってください。以下の情報を基に、0-100の優先度スコアと推奨アクションを決定してください。
@@ -111,21 +113,23 @@ GPU予約システムの優先度判定を行ってください。以下の情�
       }
 
       const parsed = JSON.parse(jsonMatch[0])
-      
+
       return {
         priority: Math.max(0, Math.min(100, parsed.priority || 50)),
         reasoning: parsed.reasoning || 'AI判定が完了しました。',
-        recommendation: ['approve', 'reject', 'request_confirmation'].includes(parsed.recommendation) 
-          ? parsed.recommendation 
-          : 'request_confirmation'
+        recommendation: ['approve', 'reject', 'request_confirmation'].includes(
+          parsed.recommendation
+        )
+          ? parsed.recommendation
+          : 'request_confirmation',
       }
     } catch (error) {
       console.error('Failed to parse Bedrock response:', error)
-      
+
       return {
         priority: 50,
         reasoning: 'AI応答の解析中にエラーが発生しました。デフォルト判定を適用します。',
-        recommendation: 'request_confirmation'
+        recommendation: 'request_confirmation',
       }
     }
   }

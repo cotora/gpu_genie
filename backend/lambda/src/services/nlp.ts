@@ -5,8 +5,8 @@ export class NLPService {
   private client: BedrockRuntimeClient
 
   constructor() {
-    this.client = new BedrockRuntimeClient({ 
-      region: process.env.AWS_REGION || 'us-east-1' 
+    this.client = new BedrockRuntimeClient({
+      region: process.env.AWS_REGION || 'us-east-1',
     })
   }
 
@@ -27,7 +27,7 @@ export class NLPService {
 
   private async parseReservationRequestLLM(request: string): Promise<ParsedRequest> {
     const prompt = this.buildNLPPrompt(request)
-    
+
     const command = new InvokeModelCommand({
       modelId: 'anthropic.claude-3-haiku-20240307-v1:0', // Use faster model for NLP
       body: JSON.stringify({
@@ -36,17 +36,17 @@ export class NLPService {
         messages: [
           {
             role: 'user',
-            content: prompt
-          }
-        ]
+            content: prompt,
+          },
+        ],
       }),
       contentType: 'application/json',
-      accept: 'application/json'
+      accept: 'application/json',
     })
 
     const response = await this.client.send(command)
     const responseBody = JSON.parse(new TextDecoder().decode(response.body))
-    
+
     return this.parseNLPResponse(responseBody.content[0].text, request)
   }
 
@@ -101,14 +101,14 @@ ${currentTime} (${timeZone})
       }
 
       const parsed = JSON.parse(jsonMatch[0])
-      
+
       // Validate and sanitize the response
       const result: ParsedRequest = {
         gpuType: this.validateGPUType(parsed.gpuType),
         quantity: Math.max(1, Math.min(10, parseInt(parsed.quantity) || 1)),
         startTime: this.validateDateTime(parsed.startTime),
         endTime: this.validateDateTime(parsed.endTime),
-        duration: Math.max(1, Math.min(168, parseInt(parsed.duration) || 1)) // Max 1 week
+        duration: Math.max(1, Math.min(168, parseInt(parsed.duration) || 1)), // Max 1 week
       }
 
       // Ensure endTime is after startTime
@@ -122,7 +122,7 @@ ${currentTime} (${timeZone})
 
       return result
     } catch (error) {
-      console.error('Failed to parse LLM response, using fallback:', error)
+      console.error('Failed to parse LLM response for request:', originalRequest, error)
       throw error
     }
   }
@@ -130,18 +130,18 @@ ${currentTime} (${timeZone})
   private validateGPUType(gpuType: string): string {
     const validTypes = ['V100', 'A100', 'RTX3090', 'RTX4090', 'H100']
     const normalized = gpuType?.toUpperCase()
-    
+
     if (validTypes.includes(normalized)) {
       return normalized
     }
-    
+
     // Try to match partial strings
     for (const validType of validTypes) {
       if (normalized?.includes(validType) || validType.includes(normalized)) {
         return validType
       }
     }
-    
+
     return 'V100' // Default
   }
 
@@ -151,18 +151,18 @@ ${currentTime} (${timeZone})
       if (isNaN(date.getTime())) {
         throw new Error('Invalid date')
       }
-      
+
       // Ensure date is not in the past (with 1 hour buffer)
       const now = new Date()
       const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
-      
+
       if (date < oneHourAgo) {
         // If in the past, set to next hour
         const nextHour = new Date(now)
         nextHour.setHours(now.getHours() + 1, 0, 0, 0)
         return nextHour.toISOString()
       }
-      
+
       return date.toISOString()
     } catch (error) {
       // Fallback to next hour
@@ -176,17 +176,17 @@ ${currentTime} (${timeZone})
   // Fallback rule-based parsing for development and error cases
   private parseReservationRequestRuleBased(request: string): ParsedRequest {
     const normalizedRequest = request.toLowerCase()
-    
+
     const gpuType = this.extractGPUType(normalizedRequest)
     const quantity = this.extractQuantity(normalizedRequest)
     const { startTime, endTime, duration } = this.extractTimeInfo(normalizedRequest)
-    
+
     return {
       gpuType,
       quantity,
       startTime,
       endTime,
-      duration
+      duration,
     }
   }
 
@@ -196,7 +196,7 @@ ${currentTime} (${timeZone})
       { pattern: /a100/i, type: 'A100' },
       { pattern: /rtx\s*3090/i, type: 'RTX3090' },
       { pattern: /rtx\s*4090/i, type: 'RTX4090' },
-      { pattern: /h100/i, type: 'H100' }
+      { pattern: /h100/i, type: 'H100' },
     ]
 
     for (const { pattern, type } of gpuPatterns) {
@@ -204,7 +204,7 @@ ${currentTime} (${timeZone})
         return type
       }
     }
-    
+
     return 'V100'
   }
 
@@ -215,7 +215,7 @@ ${currentTime} (${timeZone})
       /(\d+)\s*枚/,
       /(\d+)\s*基/,
       /(\d+)\s*units?/i,
-      /(\d+)\s*gpus?/i
+      /(\d+)\s*gpus?/i,
     ]
 
     for (const pattern of patterns) {
@@ -226,10 +226,18 @@ ${currentTime} (${timeZone})
     }
 
     const numberWords = {
-      '一': 1, '二': 2, '三': 3, '四': 4, '五': 5,
-      '六': 6, '七': 7, '八': 8, '九': 9, '十': 10
+      一: 1,
+      二: 2,
+      三: 3,
+      四: 4,
+      五: 5,
+      六: 6,
+      七: 7,
+      八: 8,
+      九: 9,
+      十: 10,
     }
-    
+
     for (const [word, num] of Object.entries(numberWords)) {
       if (request.includes(word)) {
         return num
@@ -239,7 +247,11 @@ ${currentTime} (${timeZone})
     return 1
   }
 
-  private extractTimeInfo(request: string): { startTime: string; endTime: string; duration: number } {
+  private extractTimeInfo(request: string): {
+    startTime: string
+    endTime: string
+    duration: number
+  } {
     const now = new Date()
     let startTime = new Date(now)
     let duration = 1
@@ -286,7 +298,7 @@ ${currentTime} (${timeZone})
     return {
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
-      duration
+      duration,
     }
   }
 }

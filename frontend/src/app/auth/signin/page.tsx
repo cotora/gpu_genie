@@ -10,7 +10,7 @@ export default function SignIn() {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  
+
   const { signIn } = useAuth()
   const router = useRouter()
 
@@ -22,8 +22,8 @@ export default function SignIn() {
     try {
       await signIn(email, password)
       router.push('/dashboard')
-    } catch (error: any) {
-      setError(error.message || 'ログインに失敗しました')
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'ログインに失敗しました')
     } finally {
       setIsLoading(false)
     }
@@ -43,14 +43,14 @@ export default function SignIn() {
             </Link>
           </p>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
               {error}
             </div>
           )}
-          
+
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="sr-only">
@@ -65,7 +65,7 @@ export default function SignIn() {
                 className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="メールアドレス"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
               />
             </div>
             <div>
@@ -81,7 +81,7 @@ export default function SignIn() {
                 className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="パスワード"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
               />
             </div>
           </div>

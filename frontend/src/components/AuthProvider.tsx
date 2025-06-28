@@ -1,8 +1,13 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { Auth } from 'aws-amplify'
-import awsConfig from '@/lib/aws-config'
+import {
+  signIn as amplifySignIn,
+  signUp as amplifySignUp,
+  signOut as amplifySignOut,
+  confirmSignUp as amplifyConfirmSignUp,
+  getCurrentUser,
+} from 'aws-amplify/auth'
 
 interface User {
   username: string
@@ -14,10 +19,10 @@ interface User {
 interface AuthContextType {
   user: User | null
   isLoading: boolean
-  signIn: (email: string, password: string) => Promise<any>
-  signUp: (email: string, password: string, name: string) => Promise<any>
+  signIn: (email: string, password: string) => Promise<unknown>
+  signUp: (email: string, password: string, name: string) => Promise<unknown>
   signOut: () => Promise<void>
-  confirmSignUp: (email: string, code: string) => Promise<any>
+  confirmSignUp: (email: string, code: string) => Promise<unknown>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -32,14 +37,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuthState = async () => {
     try {
-      const currentUser = await Auth.currentAuthenticatedUser()
+      const currentUser = await getCurrentUser()
       setUser({
         username: currentUser.username,
-        email: currentUser.attributes.email,
-        name: currentUser.attributes.name,
-        sub: currentUser.attributes.sub
+        email: currentUser.signInDetails?.loginId || '',
+        name: currentUser.username,
+        sub: currentUser.userId,
       })
-    } catch (error) {
+    } catch {
       console.log('No authenticated user')
       setUser(null)
     } finally {
@@ -49,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const result = await Auth.signIn(email, password)
+      const result = await amplifySignIn({ username: email, password })
       await checkAuthState()
       return result
     } catch (error) {
@@ -60,13 +65,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
-      const result = await Auth.signUp({
+      const result = await amplifySignUp({
         username: email,
         password,
-        attributes: {
-          email,
-          name
-        }
+        options: {
+          userAttributes: {
+            email,
+            name,
+          },
+        },
       })
       return result
     } catch (error) {
@@ -77,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const confirmSignUp = async (email: string, code: string) => {
     try {
-      const result = await Auth.confirmSignUp(email, code)
+      const result = await amplifyConfirmSignUp({ username: email, confirmationCode: code })
       return result
     } catch (error) {
       console.error('Confirm sign up error:', error)
@@ -87,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      await Auth.signOut()
+      await amplifySignOut()
       setUser(null)
     } catch (error) {
       console.error('Sign out error:', error)
@@ -101,14 +108,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signIn,
     signUp,
     signOut,
-    confirmSignUp
+    confirmSignUp,
   }
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export const useAuth = () => {

@@ -1,22 +1,22 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { 
-  DynamoDBDocumentClient, 
-  PutCommand, 
-  GetCommand, 
-  QueryCommand, 
-  UpdateCommand, 
-  ScanCommand 
+import {
+  DynamoDBDocumentClient,
+  PutCommand,
+  GetCommand,
+  QueryCommand,
+  UpdateCommand,
+  ScanCommand,
 } from '@aws-sdk/lib-dynamodb'
 import { Reservation, User, GPUServer } from '../types'
 
-const clientConfig = process.env.DYNAMODB_ENDPOINT 
+const clientConfig = process.env.DYNAMODB_ENDPOINT
   ? {
       region: process.env.AWS_REGION || 'us-east-1',
       endpoint: process.env.DYNAMODB_ENDPOINT,
       credentials: {
         accessKeyId: 'dummy',
-        secretAccessKey: 'dummy'
-      }
+        secretAccessKey: 'dummy',
+      },
     }
   : { region: process.env.AWS_REGION || 'us-east-1' }
 
@@ -31,7 +31,7 @@ export class DynamoDBService {
   async createReservation(reservation: Reservation): Promise<void> {
     const command = new PutCommand({
       TableName: RESERVATIONS_TABLE,
-      Item: reservation
+      Item: reservation,
     })
     await docClient.send(command)
   }
@@ -39,10 +39,10 @@ export class DynamoDBService {
   async getReservation(id: string): Promise<Reservation | null> {
     const command = new GetCommand({
       TableName: RESERVATIONS_TABLE,
-      Key: { id }
+      Key: { id },
     })
     const result = await docClient.send(command)
-    return result.Item as Reservation || null
+    return (result.Item as Reservation) || null
   }
 
   async getUserReservations(userId: string): Promise<Reservation[]> {
@@ -51,50 +51,62 @@ export class DynamoDBService {
       IndexName: 'user-id-index',
       KeyConditionExpression: 'userId = :userId',
       ExpressionAttributeValues: {
-        ':userId': userId
-      }
+        ':userId': userId,
+      },
     })
     const result = await docClient.send(command)
-    return result.Items as Reservation[] || []
+    return (result.Items as Reservation[]) || []
   }
 
-  async updateReservationStatus(id: string, status: Reservation['status'], priority?: number): Promise<void> {
-    const updateExpression = priority !== undefined 
-      ? 'SET #status = :status, priority = :priority, updatedAt = :updatedAt'
-      : 'SET #status = :status, updatedAt = :updatedAt'
-    
-    const expressionAttributeValues = priority !== undefined 
-      ? { ':status': status, ':priority': priority, ':updatedAt': new Date().toISOString() }
-      : { ':status': status, ':updatedAt': new Date().toISOString() }
+  async updateReservationStatus(
+    id: string,
+    status: Reservation['status'],
+    priority?: number
+  ): Promise<void> {
+    const updateExpression =
+      priority !== undefined
+        ? 'SET #status = :status, priority = :priority, updatedAt = :updatedAt'
+        : 'SET #status = :status, updatedAt = :updatedAt'
+
+    const expressionAttributeValues =
+      priority !== undefined
+        ? { ':status': status, ':priority': priority, ':updatedAt': new Date().toISOString() }
+        : { ':status': status, ':updatedAt': new Date().toISOString() }
 
     const command = new UpdateCommand({
       TableName: RESERVATIONS_TABLE,
       Key: { id },
       UpdateExpression: updateExpression,
       ExpressionAttributeNames: {
-        '#status': 'status'
+        '#status': 'status',
       },
-      ExpressionAttributeValues: expressionAttributeValues
+      ExpressionAttributeValues: expressionAttributeValues,
     })
     await docClient.send(command)
   }
 
-  async getConflictingReservations(startTime: string, endTime: string, gpuType: string, quantity: number): Promise<Reservation[]> {
+  async getConflictingReservations(
+    startTime: string,
+    endTime: string,
+    gpuType: string,
+    quantity: number
+  ): Promise<Reservation[]> {
     const command = new ScanCommand({
       TableName: RESERVATIONS_TABLE,
-      FilterExpression: '#status = :status AND parsedRequest.gpuType = :gpuType AND NOT (endTime <= :startTime OR startTime >= :endTime)',
+      FilterExpression:
+        '#status = :status AND parsedRequest.gpuType = :gpuType AND NOT (endTime <= :startTime OR startTime >= :endTime)',
       ExpressionAttributeNames: {
-        '#status': 'status'
+        '#status': 'status',
       },
       ExpressionAttributeValues: {
         ':status': 'confirmed',
         ':gpuType': gpuType,
         ':startTime': startTime,
-        ':endTime': endTime
-      }
+        ':endTime': endTime,
+      },
     })
     const result = await docClient.send(command)
-    return (result.Items as Reservation[] || []).filter(reservation => {
+    return ((result.Items as Reservation[]) || []).filter(reservation => {
       const reservedQuantity = reservation.parsedRequest.quantity
       return reservedQuantity >= quantity
     })
@@ -103,26 +115,26 @@ export class DynamoDBService {
   async getUser(id: string): Promise<User | null> {
     const command = new GetCommand({
       TableName: USERS_TABLE,
-      Key: { id }
+      Key: { id },
     })
     const result = await docClient.send(command)
-    return result.Item as User || null
+    return (result.Item as User) || null
   }
 
   async createUser(user: User): Promise<void> {
     const command = new PutCommand({
       TableName: USERS_TABLE,
-      Item: user
+      Item: user,
     })
     await docClient.send(command)
   }
 
   async getGPUServers(): Promise<GPUServer[]> {
     const command = new ScanCommand({
-      TableName: GPU_SERVERS_TABLE
+      TableName: GPU_SERVERS_TABLE,
     })
     const result = await docClient.send(command)
-    return result.Items as GPUServer[] || []
+    return (result.Items as GPUServer[]) || []
   }
 
   async getAvailableGPUs(gpuType: string): Promise<number> {

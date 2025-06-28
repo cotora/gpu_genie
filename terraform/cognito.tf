@@ -2,7 +2,7 @@ resource "aws_cognito_user_pool" "gpu_genie_pool" {
   name = "${local.project_name}-user-pool-${var.environment}"
 
   username_attributes = ["email"]
-  
+
   auto_verified_attributes = ["email"]
 
   password_policy {
@@ -25,23 +25,23 @@ resource "aws_cognito_user_pool" "gpu_genie_pool" {
 
   schema {
     attribute_data_type = "String"
-    name               = "email"
-    required           = true
-    mutable           = true
+    name                = "email"
+    required            = true
+    mutable             = true
   }
 
   schema {
     attribute_data_type = "String"
-    name               = "name"
-    required           = true
-    mutable           = true
+    name                = "name"
+    required            = true
+    mutable             = true
   }
 
   schema {
     attribute_data_type = "String"
-    name               = "role"
-    required           = false
-    mutable           = true
+    name                = "role"
+    required            = false
+    mutable             = true
   }
 
   tags = {
@@ -74,19 +74,19 @@ resource "aws_cognito_user_pool_client" "gpu_genie_client" {
   ]
 
   allowed_oauth_flows                  = ["code"]
-  allowed_oauth_scopes                = ["email", "openid", "profile"]
+  allowed_oauth_scopes                 = ["email", "openid", "profile"]
   allowed_oauth_flows_user_pool_client = true
 
   prevent_user_existence_errors = "ENABLED"
 
   token_validity_units {
     access_token  = "hours"
-    id_token     = "hours"
+    id_token      = "hours"
     refresh_token = "days"
   }
 
   access_token_validity  = 1
-  id_token_validity     = 1
+  id_token_validity      = 1
   refresh_token_validity = 30
 }
 

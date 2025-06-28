@@ -1,7 +1,7 @@
 resource "aws_dynamodb_table" "reservations" {
-  name           = "${local.project_name}-reservations-${var.environment}"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "id"
+  name         = "${local.project_name}-reservations-${var.environment}"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
 
   attribute {
     name = "id"
@@ -19,13 +19,15 @@ resource "aws_dynamodb_table" "reservations" {
   }
 
   global_secondary_index {
-    name     = "user-id-index"
-    hash_key = "userId"
+    name            = "user-id-index"
+    hash_key        = "userId"
+    projection_type = "ALL"
   }
 
   global_secondary_index {
-    name     = "status-index"
-    hash_key = "status"
+    name            = "status-index"
+    hash_key        = "status"
+    projection_type = "ALL"
   }
 
   tags = {
@@ -34,9 +36,9 @@ resource "aws_dynamodb_table" "reservations" {
 }
 
 resource "aws_dynamodb_table" "users" {
-  name           = "${local.project_name}-users-${var.environment}"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "id"
+  name         = "${local.project_name}-users-${var.environment}"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
 
   attribute {
     name = "id"
@@ -49,8 +51,9 @@ resource "aws_dynamodb_table" "users" {
   }
 
   global_secondary_index {
-    name     = "email-index"
-    hash_key = "email"
+    name            = "email-index"
+    hash_key        = "email"
+    projection_type = "ALL"
   }
 
   tags = {
@@ -59,9 +62,9 @@ resource "aws_dynamodb_table" "users" {
 }
 
 resource "aws_dynamodb_table" "gpu_servers" {
-  name           = "${local.project_name}-gpu-servers-${var.environment}"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "id"
+  name         = "${local.project_name}-gpu-servers-${var.environment}"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
 
   attribute {
     name = "id"
@@ -74,8 +77,9 @@ resource "aws_dynamodb_table" "gpu_servers" {
   }
 
   global_secondary_index {
-    name     = "gpu-type-index"
-    hash_key = "gpuType"
+    name            = "gpu-type-index"
+    hash_key        = "gpuType"
+    projection_type = "ALL"
   }
 
   tags = {

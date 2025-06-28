@@ -13,7 +13,7 @@ export default function SignUp() {
   const [error, setError] = useState('')
   const [step, setStep] = useState<'signup' | 'confirm'>('signup')
   const [successMessage, setSuccessMessage] = useState('')
-  
+
   const { signUp, confirmSignUp } = useAuth()
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -25,8 +25,8 @@ export default function SignUp() {
       await signUp(email, password, name)
       setStep('confirm')
       setSuccessMessage('確認コードをメールに送信しました。')
-    } catch (error: any) {
-      setError(error.message || '登録に失敗しました')
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : '登録に失敗しました')
     } finally {
       setIsLoading(false)
     }
@@ -40,8 +40,8 @@ export default function SignUp() {
     try {
       await confirmSignUp(email, confirmationCode)
       setSuccessMessage('アカウントが確認されました。ログインページに移動してください。')
-    } catch (error: any) {
-      setError(error.message || '確認に失敗しました')
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : '確認に失敗しました')
     } finally {
       setIsLoading(false)
     }
@@ -63,7 +63,7 @@ export default function SignUp() {
             </p>
           )}
         </div>
-        
+
         {step === 'signup' ? (
           <form className="mt-8 space-y-6" onSubmit={handleSignUp}>
             {error && (
@@ -71,7 +71,7 @@ export default function SignUp() {
                 {error}
               </div>
             )}
-            
+
             <div className="space-y-4">
               <div>
                 <label htmlFor="name" className="sr-only">
@@ -85,7 +85,7 @@ export default function SignUp() {
                   className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="名前"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={e => setName(e.target.value)}
                 />
               </div>
               <div>
@@ -101,7 +101,7 @@ export default function SignUp() {
                   className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="メールアドレス"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={e => setEmail(e.target.value)}
                 />
               </div>
               <div>
@@ -117,7 +117,7 @@ export default function SignUp() {
                   className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="パスワード（8文字以上、大小英数字・記号を含む）"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                 />
               </div>
             </div>
@@ -146,13 +146,13 @@ export default function SignUp() {
                 {error}
               </div>
             )}
-            
+
             {successMessage && (
               <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-md">
                 {successMessage}
               </div>
             )}
-            
+
             <div>
               <p className="text-sm text-gray-600 mb-4">
                 {email} に送信された6桁の確認コードを入力してください。
@@ -166,7 +166,7 @@ export default function SignUp() {
                 className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-center text-xl tracking-widest"
                 placeholder="123456"
                 value={confirmationCode}
-                onChange={(e) => setConfirmationCode(e.target.value)}
+                onChange={e => setConfirmationCode(e.target.value)}
               />
             </div>
 
@@ -193,13 +193,10 @@ export default function SignUp() {
                 )}
               </button>
             </div>
-            
+
             {successMessage.includes('確認されました') && (
               <div className="text-center">
-                <Link 
-                  href="/auth/signin"
-                  className="text-blue-600 hover:text-blue-500 font-medium"
-                >
+                <Link href="/auth/signin" className="text-blue-600 hover:text-blue-500 font-medium">
                   ログインページへ
                 </Link>
               </div>

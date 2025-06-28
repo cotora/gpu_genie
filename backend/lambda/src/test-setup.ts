@@ -1,5 +1,4 @@
 // Test setup file
-import { config } from 'aws-sdk'
 
 // Mock AWS SDK for tests
 jest.mock('aws-sdk', () => ({

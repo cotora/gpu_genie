@@ -59,7 +59,7 @@ class GPUGenieAPI {
   private async makeRequest<T>(
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     endpoint: string,
-    data?: any
+    data?: unknown
   ): Promise<T> {
     try {
       const response = await axios({
@@ -85,8 +85,15 @@ class GPUGenieAPI {
     return this.makeRequest<{ reservations: Reservation[] }>('GET', `/reservations/${userId}`)
   }
 
-  async updateReservation(reservationId: string, status: string): Promise<{ message: string; id: string; status: string }> {
-    return this.makeRequest<{ message: string; id: string; status: string }>('PUT', `/reservations/update/${reservationId}`, { status })
+  async updateReservation(
+    reservationId: string,
+    status: string
+  ): Promise<{ message: string; id: string; status: string }> {
+    return this.makeRequest<{ message: string; id: string; status: string }>(
+      'PUT',
+      `/reservations/update/${reservationId}`,
+      { status }
+    )
   }
 
   async createUser(user: CreateUserRequest): Promise<User> {
@@ -99,4 +106,10 @@ class GPUGenieAPI {
 }
 
 export const api = new GPUGenieAPI()
-export type { CreateReservationRequest, CreateReservationResponse, Reservation, User, CreateUserRequest }
+export type {
+  CreateReservationRequest,
+  CreateReservationResponse,
+  Reservation,
+  User,
+  CreateUserRequest,
+}

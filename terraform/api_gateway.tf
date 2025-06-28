@@ -75,8 +75,8 @@ resource "aws_api_gateway_integration" "create_reservation_integration" {
   http_method = aws_api_gateway_method.create_reservation.http_method
 
   integration_http_method = "POST"
-  type                   = "AWS_PROXY"
-  uri                    = aws_lambda_function.reservations_handler.invoke_arn
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.reservations_handler.invoke_arn
 }
 
 # /reservations/{userId} リソース
@@ -100,8 +100,8 @@ resource "aws_api_gateway_integration" "get_reservations_integration" {
   http_method = aws_api_gateway_method.get_reservations.http_method
 
   integration_http_method = "POST"
-  type                   = "AWS_PROXY"
-  uri                    = aws_lambda_function.get_reservations_handler.invoke_arn
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.get_reservations_handler.invoke_arn
 }
 
 # /reservations/update/{id} リソース
@@ -131,8 +131,8 @@ resource "aws_api_gateway_integration" "update_reservation_integration" {
   http_method = aws_api_gateway_method.update_reservation_method.http_method
 
   integration_http_method = "POST"
-  type                   = "AWS_PROXY"
-  uri                    = aws_lambda_function.update_reservation_handler.invoke_arn
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.update_reservation_handler.invoke_arn
 }
 
 # /users リソース
@@ -156,8 +156,8 @@ resource "aws_api_gateway_integration" "create_user_integration" {
   http_method = aws_api_gateway_method.create_user.http_method
 
   integration_http_method = "POST"
-  type                   = "AWS_PROXY"
-  uri                    = aws_lambda_function.users_handler.invoke_arn
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.users_handler.invoke_arn
 }
 
 # /users/{id} リソース
@@ -181,8 +181,8 @@ resource "aws_api_gateway_integration" "get_user_integration" {
   http_method = aws_api_gateway_method.get_user.http_method
 
   integration_http_method = "POST"
-  type                   = "AWS_PROXY"
-  uri                    = aws_lambda_function.get_user_handler.invoke_arn
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.get_user_handler.invoke_arn
 }
 
 # Lambda実行権限

@@ -5,7 +5,9 @@ import { User } from '../types'
 
 const dynamoService = new DynamoDBService()
 
-export const createUser: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const createUser: APIGatewayProxyHandler = async (
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> => {
   try {
     const body = JSON.parse(event.body || '{}')
     const { email, name, role = 'user' } = body
@@ -19,8 +21,8 @@ export const createUser: APIGatewayProxyHandler = async (event: APIGatewayProxyE
           'Access-Control-Allow-Credentials': true,
         },
         body: JSON.stringify({
-          error: 'メールアドレスと名前が必要です'
-        })
+          error: 'メールアドレスと名前が必要です',
+        }),
       }
     }
 
@@ -30,7 +32,7 @@ export const createUser: APIGatewayProxyHandler = async (event: APIGatewayProxyE
       name,
       role: role === 'admin' ? 'admin' : 'user',
       priority: role === 'admin' ? 80 : 50,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     }
 
     await dynamoService.createUser(user)
@@ -47,12 +49,12 @@ export const createUser: APIGatewayProxyHandler = async (event: APIGatewayProxyE
         email: user.email,
         name: user.name,
         role: user.role,
-        priority: user.priority
-      })
+        priority: user.priority,
+      }),
     }
   } catch (error) {
     console.error('Create user error:', error)
-    
+
     return {
       statusCode: 500,
       headers: {
@@ -61,13 +63,15 @@ export const createUser: APIGatewayProxyHandler = async (event: APIGatewayProxyE
         'Access-Control-Allow-Credentials': true,
       },
       body: JSON.stringify({
-        error: 'ユーザー作成中にエラーが発生しました'
-      })
+        error: 'ユーザー作成中にエラーが発生しました',
+      }),
     }
   }
 }
 
-export const getUser: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const getUser: APIGatewayProxyHandler = async (
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> => {
   try {
     const userId = event.pathParameters?.id
 
@@ -80,8 +84,8 @@ export const getUser: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
           'Access-Control-Allow-Credentials': true,
         },
         body: JSON.stringify({
-          error: 'ユーザーIDが必要です'
-        })
+          error: 'ユーザーIDが必要です',
+        }),
       }
     }
 
@@ -96,8 +100,8 @@ export const getUser: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
           'Access-Control-Allow-Credentials': true,
         },
         body: JSON.stringify({
-          error: 'ユーザーが見つかりません'
-        })
+          error: 'ユーザーが見つかりません',
+        }),
       }
     }
 
@@ -113,12 +117,12 @@ export const getUser: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         email: user.email,
         name: user.name,
         role: user.role,
-        priority: user.priority
-      })
+        priority: user.priority,
+      }),
     }
   } catch (error) {
     console.error('Get user error:', error)
-    
+
     return {
       statusCode: 500,
       headers: {
@@ -127,8 +131,8 @@ export const getUser: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         'Access-Control-Allow-Credentials': true,
       },
       body: JSON.stringify({
-        error: 'ユーザー情報の取得中にエラーが発生しました'
-      })
+        error: 'ユーザー情報の取得中にエラーが発生しました',
+      }),
     }
   }
 }

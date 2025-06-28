@@ -12,10 +12,10 @@ interface User {
 interface AuthContextType {
   user: User | null
   isLoading: boolean
-  signIn: (email: string, password: string) => Promise<any>
-  signUp: (email: string, password: string, name: string) => Promise<any>
+  signIn: (email: string, password: string) => Promise<unknown>
+  signUp: (email: string, password: string, name: string) => Promise<unknown>
   signOut: () => Promise<void>
-  confirmSignUp: (email: string, code: string) => Promise<any>
+  confirmSignUp: (email: string, code: string) => Promise<unknown>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -25,6 +25,8 @@ export function DevAuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false)
 
   const signIn = async (email: string, password: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _password = password
     setIsLoading(true)
     try {
       // Mock successful login for development
@@ -32,12 +34,12 @@ export function DevAuthProvider({ children }: { children: ReactNode }) {
         username: email,
         email,
         name: email.split('@')[0],
-        sub: 'test-user-01'
+        sub: 'test-user-01',
       }
-      
+
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
       setUser(mockUser)
       return { user: mockUser }
     } catch (error) {
@@ -49,15 +51,21 @@ export function DevAuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signUp = async (email: string, password: string, name: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _email = email
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _password = password
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _name = name
     setIsLoading(true)
     try {
       // Mock successful signup for development
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      return { 
+
+      return {
         user: null,
         userConfirmed: false,
-        userSub: 'mock-user-sub'
+        userSub: 'mock-user-sub',
       }
     } catch (error) {
       console.error('Mock sign up error:', error)
@@ -68,11 +76,15 @@ export function DevAuthProvider({ children }: { children: ReactNode }) {
   }
 
   const confirmSignUp = async (email: string, code: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _email = email
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _code = code
     setIsLoading(true)
     try {
       // Mock successful confirmation for development
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
       return { user: null }
     } catch (error) {
       console.error('Mock confirm sign up error:', error)
@@ -101,14 +113,10 @@ export function DevAuthProvider({ children }: { children: ReactNode }) {
     signIn,
     signUp,
     signOut,
-    confirmSignUp
+    confirmSignUp,
   }
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export const useAuth = () => {

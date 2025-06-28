@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/components/DevAuthProvider'
 import { api } from '@/lib/api'
 
@@ -22,15 +22,9 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const { user } = useAuth()
 
-  useEffect(() => {
-    if (user) {
-      fetchReservations()
-    }
-  }, [user])
-
-  const fetchReservations = async () => {
+  const fetchReservations = useCallback(async () => {
     if (!user) return
-    
+
     try {
       const response = await api.getUserReservations(user.sub)
       setReservations(response.reservations)
@@ -45,9 +39,9 @@ export default function Dashboard() {
           endTime: '2024-06-24T18:00:00',
           parsedRequest: {
             gpuType: 'V100',
-            quantity: 2
+            quantity: 2,
           },
-          status: 'confirmed'
+          status: 'confirmed',
         },
         {
           id: '2',
@@ -56,10 +50,10 @@ export default function Dashboard() {
           endTime: '2024-06-25T17:00:00',
           parsedRequest: {
             gpuType: 'A100',
-            quantity: 1
+            quantity: 1,
           },
           status: 'pending',
-          priority: 85
+          priority: 85,
         },
         {
           id: '3',
@@ -68,15 +62,21 @@ export default function Dashboard() {
           endTime: '2024-06-22T16:00:00',
           parsedRequest: {
             gpuType: 'RTX3090',
-            quantity: 1
+            quantity: 1,
           },
-          status: 'rejected'
-        }
+          status: 'rejected',
+        },
       ])
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      fetchReservations()
+    }
+  }, [user, fetchReservations])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -112,10 +112,8 @@ export default function Dashboard() {
     if (confirm('この予約をキャンセルしますか？')) {
       try {
         await api.updateReservation(id, 'cancelled')
-        setReservations(prev => 
-          prev.map(res => 
-            res.id === id ? { ...res, status: 'cancelled' as const } : res
-          )
+        setReservations(prev =>
+          prev.map(res => (res.id === id ? { ...res, status: 'cancelled' as const } : res))
         )
       } catch (error) {
         console.error('キャンセル処理に失敗しました:', error)
@@ -130,7 +128,7 @@ export default function Dashboard() {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     })
   }
 
@@ -159,9 +157,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-800 mb-8">
-            予約ダッシュボード
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-8">予約ダッシュボード</h1>
 
           <div className="grid md:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-lg shadow p-6">
@@ -192,11 +188,9 @@ export default function Dashboard() {
 
           <div className="bg-white rounded-lg shadow-lg">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-800">
-                予約一覧
-              </h2>
+              <h2 className="text-xl font-semibold text-gray-800">予約一覧</h2>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50">
@@ -219,12 +213,10 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {reservations.map((reservation) => (
+                  {reservations.map(reservation => (
                     <tr key={reservation.id}>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">
-                          {reservation.request}
-                        </div>
+                        <div className="text-sm text-gray-900">{reservation.request}</div>
                         {reservation.priority && (
                           <div className="text-xs text-gray-500">
                             AI優先度: {reservation.priority}/100
@@ -241,7 +233,9 @@ export default function Dashboard() {
                         {reservation.parsedRequest.gpuType} × {reservation.parsedRequest.quantity}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(reservation.status)}`}>
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(reservation.status)}`}
+                        >
                           {getStatusText(reservation.status)}
                         </span>
                       </td>
@@ -255,9 +249,7 @@ export default function Dashboard() {
                           </button>
                         )}
                         {reservation.status === 'rejected' && (
-                          <button className="text-blue-600 hover:text-blue-900">
-                            再申請
-                          </button>
+                          <button className="text-blue-600 hover:text-blue-900">再申請</button>
                         )}
                       </td>
                     </tr>

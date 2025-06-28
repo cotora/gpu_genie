@@ -25,11 +25,11 @@ output "dynamodb_tables" {
 output "lambda_functions" {
   description = "Lambda function names"
   value = {
-    reservations_handler      = aws_lambda_function.reservations_handler.function_name
-    get_reservations_handler  = aws_lambda_function.get_reservations_handler.function_name
+    reservations_handler       = aws_lambda_function.reservations_handler.function_name
+    get_reservations_handler   = aws_lambda_function.get_reservations_handler.function_name
     update_reservation_handler = aws_lambda_function.update_reservation_handler.function_name
-    users_handler            = aws_lambda_function.users_handler.function_name
-    get_user_handler         = aws_lambda_function.get_user_handler.function_name
+    users_handler              = aws_lambda_function.users_handler.function_name
+    get_user_handler           = aws_lambda_function.get_user_handler.function_name
   }
 }
 

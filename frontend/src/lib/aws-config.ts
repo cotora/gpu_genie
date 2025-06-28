@@ -2,22 +2,15 @@ import { Amplify } from 'aws-amplify'
 
 const awsConfig = {
   Auth: {
-    region: process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1',
-    userPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || '',
-    userPoolWebClientId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID || '',
-    identityPoolId: process.env.NEXT_PUBLIC_COGNITO_IDENTITY_POOL_ID || '',
-    mandatorySignIn: true,
-    authenticationFlowType: 'USER_SRP_AUTH'
+    Cognito: {
+      region: process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1',
+      userPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || '',
+      userPoolClientId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID || '',
+      identityPoolId: process.env.NEXT_PUBLIC_COGNITO_IDENTITY_POOL_ID || '',
+      mandatorySignIn: true,
+      authenticationFlowType: 'USER_SRP_AUTH',
+    },
   },
-  API: {
-    endpoints: [
-      {
-        name: 'gpu-genie-api',
-        endpoint: process.env.NEXT_PUBLIC_API_GATEWAY_URL || '',
-        region: process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1'
-      }
-    ]
-  }
 }
 
 if (typeof window !== 'undefined') {

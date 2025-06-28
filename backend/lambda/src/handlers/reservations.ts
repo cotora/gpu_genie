@@ -9,7 +9,9 @@ const dynamoService = new DynamoDBService()
 const nlpService = new NLPService()
 const bedrockService = new BedrockService()
 
-export const createReservation: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const createReservation: APIGatewayProxyHandler = async (
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> => {
   try {
     const body = JSON.parse(event.body || '{}')
     const { request: userRequest, userId } = body
@@ -23,8 +25,8 @@ export const createReservation: APIGatewayProxyHandler = async (event: APIGatewa
           'Access-Control-Allow-Credentials': true,
         },
         body: JSON.stringify({
-          error: 'リクエスト内容とユーザーIDが必要です'
-        })
+          error: 'リクエスト内容とユーザーIDが必要です',
+        }),
       }
     }
 
@@ -38,13 +40,13 @@ export const createReservation: APIGatewayProxyHandler = async (event: APIGatewa
           'Access-Control-Allow-Credentials': true,
         },
         body: JSON.stringify({
-          error: 'ユーザーが見つかりません'
-        })
+          error: 'ユーザーが見つかりません',
+        }),
       }
     }
 
     const parsedRequest = await nlpService.parseReservationRequest(userRequest)
-    
+
     const availableGPUs = await dynamoService.getAvailableGPUs(parsedRequest.gpuType)
     if (availableGPUs < parsedRequest.quantity) {
       return {
@@ -55,8 +57,8 @@ export const createReservation: APIGatewayProxyHandler = async (event: APIGatewa
           'Access-Control-Allow-Credentials': true,
         },
         body: JSON.stringify({
-          error: `${parsedRequest.gpuType}の利用可能台数が不足しています (要求: ${parsedRequest.quantity}台, 利用可能: ${availableGPUs}台)`
-        })
+          error: `${parsedRequest.gpuType}の利用可能台数が不足しています (要求: ${parsedRequest.quantity}台, 利用可能: ${availableGPUs}台)`,
+        }),
       }
     }
 
@@ -69,7 +71,7 @@ export const createReservation: APIGatewayProxyHandler = async (event: APIGatewa
       endTime: parsedRequest.endTime,
       status: 'pending',
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     }
 
     const conflictingReservations = await dynamoService.getConflictingReservations(
@@ -82,11 +84,11 @@ export const createReservation: APIGatewayProxyHandler = async (event: APIGatewa
     const priorityRequest = {
       reservation,
       user,
-      conflictingReservations
+      conflictingReservations,
     }
 
     const priorityResult = await bedrockService.evaluatePriority(priorityRequest)
-    
+
     reservation.priority = priorityResult.priority
 
     if (priorityResult.recommendation === 'approve' && conflictingReservations.length === 0) {
@@ -108,12 +110,12 @@ export const createReservation: APIGatewayProxyHandler = async (event: APIGatewa
         priority: priorityResult.priority,
         reasoning: priorityResult.reasoning,
         status: reservation.status,
-        recommendation: priorityResult.recommendation
-      })
+        recommendation: priorityResult.recommendation,
+      }),
     }
   } catch (error) {
     console.error('Create reservation error:', error)
-    
+
     return {
       statusCode: 500,
       headers: {
@@ -122,16 +124,18 @@ export const createReservation: APIGatewayProxyHandler = async (event: APIGatewa
         'Access-Control-Allow-Credentials': true,
       },
       body: JSON.stringify({
-        error: '予約処理中にエラーが発生しました'
-      })
+        error: '予約処理中にエラーが発生しました',
+      }),
     }
   }
 }
 
-export const getReservations: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const getReservations: APIGatewayProxyHandler = async (
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> => {
   try {
     const userId = event.pathParameters?.userId
-    
+
     if (!userId) {
       return {
         statusCode: 400,
@@ -141,8 +145,8 @@ export const getReservations: APIGatewayProxyHandler = async (event: APIGatewayP
           'Access-Control-Allow-Credentials': true,
         },
         body: JSON.stringify({
-          error: 'ユーザーIDが必要です'
-        })
+          error: 'ユーザーIDが必要です',
+        }),
       }
     }
 
@@ -156,14 +160,14 @@ export const getReservations: APIGatewayProxyHandler = async (event: APIGatewayP
         'Access-Control-Allow-Credentials': true,
       },
       body: JSON.stringify({
-        reservations: reservations.sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        )
-      })
+        reservations: reservations.sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ),
+      }),
     }
   } catch (error) {
     console.error('Get reservations error:', error)
-    
+
     return {
       statusCode: 500,
       headers: {
@@ -172,13 +176,15 @@ export const getReservations: APIGatewayProxyHandler = async (event: APIGatewayP
         'Access-Control-Allow-Credentials': true,
       },
       body: JSON.stringify({
-        error: '予約情報の取得中にエラーが発生しました'
-      })
+        error: '予約情報の取得中にエラーが発生しました',
+      }),
     }
   }
 }
 
-export const updateReservation: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const updateReservation: APIGatewayProxyHandler = async (
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> => {
   try {
     const reservationId = event.pathParameters?.id
     const body = JSON.parse(event.body || '{}')
@@ -193,8 +199,8 @@ export const updateReservation: APIGatewayProxyHandler = async (event: APIGatewa
           'Access-Control-Allow-Credentials': true,
         },
         body: JSON.stringify({
-          error: '予約IDとステータスが必要です'
-        })
+          error: '予約IDとステータスが必要です',
+        }),
       }
     }
 
@@ -208,8 +214,8 @@ export const updateReservation: APIGatewayProxyHandler = async (event: APIGatewa
           'Access-Control-Allow-Credentials': true,
         },
         body: JSON.stringify({
-          error: '予約が見つかりません'
-        })
+          error: '予約が見つかりません',
+        }),
       }
     }
 
@@ -225,12 +231,12 @@ export const updateReservation: APIGatewayProxyHandler = async (event: APIGatewa
       body: JSON.stringify({
         message: '予約が更新されました',
         id: reservationId,
-        status
-      })
+        status,
+      }),
     }
   } catch (error) {
     console.error('Update reservation error:', error)
-    
+
     return {
       statusCode: 500,
       headers: {
@@ -239,8 +245,8 @@ export const updateReservation: APIGatewayProxyHandler = async (event: APIGatewa
         'Access-Control-Allow-Credentials': true,
       },
       body: JSON.stringify({
-        error: '予約の更新中にエラーが発生しました'
-      })
+        error: '予約の更新中にエラーが発生しました',
+      }),
     }
   }
 }

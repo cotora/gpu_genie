@@ -1,6 +1,6 @@
 # GPU Genie Manual Deployment Scripts
 
-このディレクトリには、AWSクラウドシェル上でGPU Genieアプリケーションを手動デプロイするためのスクリプトが含まれています。
+このディレクトリには、AWSクラウドシェル上でGPU Genieアプリケーションを手動デプロイするためのスクリプトと、ローカルでCIを実行するためのスクリプトが含まれています。
 
 ## 前提条件
 
@@ -20,7 +20,132 @@
 - Cognito (ユーザープール作成・管理)
 - Bedrock (モデル利用)
 
-## 使用方法
+## スクリプト一覧
+
+### デプロイスクリプト
+- `deploy.sh` - メインのデプロイスクリプト
+- `deploy-utils.sh` - 個別デプロイタスク用ユーティリティ
+
+### CIスクリプト
+- `ci.sh` - メインのCIスクリプト
+- `ci-utils.sh` - 個別CIタスク用ユーティリティ
+
+## CI（継続的インテグレーション）の使用方法
+
+### 1. 完全CI実行
+
+```bash
+# 全てのCIチェックを実行
+./scripts/ci.sh
+```
+
+### 2. 個別CIタスクの実行
+
+```bash
+# 必要なツールの確認
+./scripts/ci-utils.sh check
+
+# フロントエンドCIのみ
+./scripts/ci-utils.sh frontend
+
+# バックエンドCIのみ
+./scripts/ci-utils.sh backend
+
+# Terraform検証のみ
+./scripts/ci-utils.sh terraform
+
+# セキュリティスキャンのみ
+./scripts/ci-utils.sh security
+
+# Dockerビルドテストのみ
+./scripts/ci-utils.sh docker
+```
+
+### 3. 特定のチェックのみ実行
+
+```bash
+# Lintチェックのみ
+./scripts/ci-utils.sh lint
+
+# テストのみ
+./scripts/ci-utils.sh test
+
+# ビルドテストのみ
+./scripts/ci-utils.sh build
+```
+
+### 4. コード修正ツール
+
+```bash
+# コードフォーマットの自動修正
+./scripts/ci-utils.sh format
+
+# 自動修正可能な問題を全て修正
+./scripts/ci-utils.sh fix
+```
+
+### 5. 開発支援ツール
+
+```bash
+# ファイル変更を監視してCIを自動実行
+./scripts/ci-utils.sh watch
+
+# 特定の部分のみ監視
+./scripts/ci-utils.sh watch frontend
+./scripts/ci-utils.sh watch backend
+
+# パフォーマンス測定
+./scripts/ci-utils.sh performance
+```
+
+## CIスクリプトの詳細
+
+### ci.sh
+GitHub ActionsのCIワークフローをローカルで実行。以下のチェックを実行：
+
+1. **フロントエンドCI**
+   - ESLint（コード品質チェック）
+   - TypeScript型チェック
+   - Prettierフォーマットチェック
+   - ビルドテスト
+
+2. **バックエンドCI**
+   - ESLint（コード品質チェック）
+   - TypeScriptビルド
+   - Prettierフォーマットチェック
+   - ユニットテスト実行
+
+3. **Terraform検証**
+   - フォーマットチェック
+   - 構文検証
+   - tflint静的解析
+
+4. **セキュリティスキャン**
+   - Trivy脆弱性スキャン
+
+5. **Dockerビルドテスト**
+   - フロントエンド・バックエンドのDockerイメージビルド
+
+### ci-utils.sh
+個別タスクと開発支援機能を提供：
+
+| コマンド | 説明 |
+|---------|------|
+| `check` | 必要なツールの確認 |
+| `frontend` | フロントエンドCIのみ実行 |
+| `backend` | バックエンドCIのみ実行 |
+| `terraform` | Terraform検証のみ実行 |
+| `security` | セキュリティスキャンのみ実行 |
+| `docker` | Dockerビルドテストのみ実行 |
+| `lint` | 全体のlintチェックのみ実行 |
+| `test` | 全体のテストのみ実行 |
+| `build` | 全体のビルドテストのみ実行 |
+| `format` | コードフォーマットの修正 |
+| `fix` | 自動修正可能な問題を修正 |
+| `watch` | ファイル変更を監視してCIを実行 |
+| `performance` | パフォーマンス測定 |
+
+## デプロイメントの使用方法
 
 ### 1. プロジェクトのクローン
 
@@ -62,6 +187,50 @@ chmod +x scripts/*.sh
 ./scripts/deploy-utils.sh deploy-backend dev
 ```
 
+## 開発ワークフローの推奨例
+
+### 1. 開発開始時
+```bash
+# 1. 最新コードを取得
+git pull origin main
+
+# 2. 依存関係をインストール
+cd frontend && npm ci && cd ..
+cd backend/lambda && npm ci && cd ../..
+
+# 3. CIチェックを実行
+./scripts/ci.sh
+```
+
+### 2. コード変更中
+```bash
+# ファイル変更を監視してリアルタイムチェック
+./scripts/ci-utils.sh watch frontend
+
+# または個別チェック
+./scripts/ci-utils.sh lint
+./scripts/ci-utils.sh test
+```
+
+### 3. コミット前
+```bash
+# 自動修正を実行
+./scripts/ci-utils.sh fix
+
+# 全CIチェックを実行
+./scripts/ci.sh
+
+# 問題がなければコミット
+git add .
+git commit -m "your commit message"
+```
+
+### 4. デプロイ前
+```bash
+# CI通過後にデプロイ
+./scripts/deploy.sh dev
+```
+
 ## スクリプトの詳細
 
 ### deploy.sh
@@ -98,16 +267,41 @@ chmod +x scripts/*.sh
 
 ## 実行例
 
+### CI実行例
+
+```bash
+# 完全CI実行
+./scripts/ci.sh
+
+# 出力例:
+# [INFO] === GPU Genie CI Script ===
+# [INFO] Timestamp: Mon Jan 15 10:30:00 UTC 2024
+# 
+# [INFO] Checking CI requirements...
+# [SUCCESS] Requirements check completed
+# 
+# [INFO] === Running Frontend CI ===
+# [SUCCESS] Frontend CI completed
+# 
+# [INFO] === Running Backend CI ===
+# [SUCCESS] Backend CI completed
+# 
+# [SUCCESS] 🎉 All CI checks passed!
+```
+
 ### 初回デプロイ
 
 ```bash
 # 1. プロジェクトディレクトリに移動
 cd gpu_genie
 
-# 2. 環境確認
+# 2. CIチェック
+./scripts/ci.sh
+
+# 3. 環境確認
 ./scripts/deploy-utils.sh check
 
-# 3. 完全デプロイ実行
+# 4. 完全デプロイ実行
 ./scripts/deploy.sh dev
 ```
 
@@ -115,10 +309,12 @@ cd gpu_genie
 
 ```bash
 # フロントエンドのみ更新
+./scripts/ci-utils.sh frontend
 ./scripts/deploy-utils.sh build-frontend dev
 ./scripts/deploy-utils.sh deploy-frontend dev
 
 # バックエンドのみ更新
+./scripts/ci-utils.sh backend
 ./scripts/deploy-utils.sh build-backend dev
 ./scripts/deploy-utils.sh deploy-backend dev
 ```
@@ -126,6 +322,10 @@ cd gpu_genie
 ### トラブルシューティング
 
 ```bash
+# CIエラーの修正
+./scripts/ci-utils.sh fix
+./scripts/ci.sh
+
 # デプロイ状況の確認
 ./scripts/deploy-utils.sh status dev
 
@@ -142,7 +342,48 @@ cat .env.deployment
 
 ## 出力例
 
-### 成功時の出力
+### CI成功時の出力
+
+```
+[INFO] === GPU Genie CI Script ===
+[INFO] Timestamp: Mon Jan 15 10:30:00 UTC 2024
+
+[INFO] Checking CI requirements...
+[SUCCESS] Requirements check completed
+
+[INFO] === Running Frontend CI ===
+[INFO] Installing frontend dependencies...
+[INFO] Running ESLint...
+[INFO] Checking TypeScript types...
+[INFO] Running Prettier check...
+[INFO] Building application...
+[SUCCESS] Frontend CI completed
+
+[INFO] === Running Backend CI ===
+[INFO] Installing backend dependencies...
+[INFO] Running ESLint...
+[INFO] Building TypeScript...
+[INFO] Running Prettier check...
+[INFO] Running tests...
+[SUCCESS] Backend CI completed
+
+[SUCCESS] 🎉 All CI checks passed!
+
+=== CI Summary ===
+✅ Frontend CI: PASSED
+✅ Backend CI: PASSED
+✅ Terraform Validation: PASSED
+✅ Security Scan: PASSED
+✅ Docker Build Test: PASSED
+
+=== Next Steps ===
+1. Your code is ready for pull request/merge
+2. Consider running deployment: ./scripts/deploy.sh dev
+
+[INFO] Total CI execution time: 45 seconds
+```
+
+### デプロイ成功時の出力
 
 ```
 [INFO] === GPU Genie Deployment Script ===
@@ -213,6 +454,19 @@ Error: Resource already exists
 ```
 **対処法**: `terraform import`コマンドで既存リソースをインポートするか、`terraform destroy`で削除してください
 
+#### 4. CIエラー
+```
+Error: ESLint check failed
+```
+**対処法**: 
+```bash
+# 自動修正を試行
+./scripts/ci-utils.sh fix
+
+# 個別確認
+./scripts/ci-utils.sh lint
+```
+
 ### ログの確認
 
 ```bash
@@ -222,6 +476,9 @@ Error: Resource already exists
 # Terraformの状態確認
 cd terraform
 terraform show
+
+# CIの詳細確認
+./scripts/ci-utils.sh frontend
 ```
 
 ## サポート

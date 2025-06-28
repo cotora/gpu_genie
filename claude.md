@@ -1,139 +1,160 @@
-# GPU Genie システム要件定義書
+# CLAUDE.md
 
-## 概要
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-GPU Genieは、自然言語による直感的な予約インターフェースとAIによる優先度判定機能を備えたGPUサーバーリソース管理システムです。従来の属人的な手動予約による非効率性を解決し、公平で自動化された予約体験を提供します。
+## System Overview
 
-## システム構成
+GPU Genie is a serverless GPU server reservation management system that uses natural language processing for intuitive booking and AI-powered priority judgment for fair resource allocation. Built on AWS with a React frontend and Node.js/TypeScript backend.
 
-AWSマネージドサービスを活用したサーバーレスアーキテクチャ：
-
+### Architecture
 ```
-ユーザー → CloudFront → S3 (Next.js静的エクスポート) → API Gateway → Lambda → DynamoDB
-                                                            ↓
-                                                    Amazon Bedrock (AI判定)
+User → CloudFront → S3 (Next.js static) → API Gateway → Lambda → DynamoDB
+                                                      ↓
+                                               Amazon Bedrock (AI)
 ```
 
-## 主要機能
+## Development Commands
 
-### ユーザー機能
+### Local Development Environment
+```bash
+# Start full development environment with Docker Compose
+docker-compose up -d
 
-**FU-01: ユーザー認証機能**
-- ログイン・ログアウト機能
-- 個人予約情報へのアクセス制御
+# Check logs
+docker-compose logs -f
 
-**FU-02: 自然言語による予約登録機能**
-- 例：「明日15時から3時間、V100を2台予約」
-- システムが自然言語を解釈して予約処理を実行
+# Stop environment
+docker-compose down
+```
 
-**FU-03: 予約確認・一覧表示機能**
-- 自身の予約状況（確定済み、拒否確認待ち）を一覧表示
+### Frontend (Next.js)
+```bash
+cd frontend
+npm install
+npm run dev          # Development server (with turbopack)
+npm run build        # Production build
+npm run export       # Static export for S3
+npm run lint         # ESLint check
+npm run lint:fix     # Auto-fix linting issues
+npm run type-check   # TypeScript type checking
+npm run format       # Format with Prettier
+npm run format:check # Check formatting
+```
 
-**FU-04: 予約キャンセル機能**
-- 確定済み予約のキャンセル操作
+### Backend (Lambda)
+```bash
+cd backend/lambda
+npm install
+npm run dev          # Development server with nodemon
+npm run build        # TypeScript compilation
+npm run test         # Run Jest tests
+npm run test:watch   # Watch mode testing
+npm run test:coverage # Test with coverage
+npm run lint         # ESLint check
+npm run lint:fix     # Auto-fix linting issues
+npm run format       # Format with Prettier
+npm run format:check # Check formatting
+```
 
-**FU-05: 予約の拒否確認・操作機能**
-- 競合による拒否確認待ちステータスの確認・操作
+### CI/CD Scripts
+```bash
+# Run all CI checks locally (mirrors GitHub Actions)
+./scripts/ci.sh
 
-### 管理者機能
+# Individual CI tasks
+./scripts/ci-utils.sh frontend    # Frontend-only CI
+./scripts/ci-utils.sh backend     # Backend-only CI
+./scripts/ci-utils.sh terraform   # Terraform validation
+./scripts/ci-utils.sh security    # Security scanning
+./scripts/ci-utils.sh docker      # Docker build tests
 
-**FA-01: 全予約の管理・監視機能**
-- 全ユーザーの予約状況確認
-- 特定予約の強制キャンセル機能
+# Code fixes
+./scripts/ci-utils.sh fix         # Auto-fix all issues
+./scripts/ci-utils.sh format      # Format code
 
-**FA-02: サーバーリソース管理機能**（任意要件）
-- GPUサーバーの追加・編集・削除
+# Development helpers
+./scripts/ci-utils.sh watch       # Watch files and run CI
+```
 
-### システム機能
+### Deployment
+```bash
+# Manual deployment (for AWS CloudShell)
+./scripts/deploy.sh dev           # Deploy to dev environment
+./scripts/deploy.sh staging       # Deploy to staging
+./scripts/deploy.sh prod          # Deploy to production
 
-**FS-01: 予約競合時のAI優先度判定機能**
-- Amazon Bedrockを利用したAI判定
-- ジョブの重要性、ユーザー実績等を考慮した優先度判定
+# Individual deployment tasks
+./scripts/deploy-utils.sh deploy-infra dev      # Infrastructure only
+./scripts/deploy-utils.sh deploy-frontend dev   # Frontend only
+./scripts/deploy-utils.sh deploy-backend dev    # Backend only
+```
 
-**FS-02: 拒否確認ワークフロー機能**
-- 低優先度予約の即時拒否を回避
-- ユーザー承認による段階的拒否プロセス
+### Database Setup
+```bash
+# Initialize DynamoDB Local tables
+cd scripts
+node init-dynamodb.js
+```
 
-## 技術スタック
+## Code Architecture
 
-### フロントエンド
-- Next.js（React フレームワーク）
-- 静的サイト生成（SSG）またはサーバーサイド生成（SSG）
-- Amazon S3ホスティング（静的エクスポート）
-- Amazon CloudFront配信
-- TypeScript対応（推奨）
+### Frontend Structure
+- **App Router**: Next.js 15 with app directory structure
+- **Authentication**: Development auth provider (DevAuthProvider) for local dev, AWS Amplify for production
+- **Styling**: Tailwind CSS v4
+- **Components**: React functional components with TypeScript
+- **API Communication**: Axios with centralized API configuration
 
-### バックエンド
-- AWS Lambda（Node.js/Python）
-- Amazon API Gateway（RESTful API）
-- Amazon DynamoDB（NoSQL）
-- Amazon Bedrock（AI判定）
+### Backend Structure
+- **Handlers**: Lambda function entry points (`handlers/reservations.ts`, `handlers/users.ts`)
+- **Services**: Business logic layers
+  - `dynamodb.ts`: Database operations
+  - `nlp.ts`: Natural language processing for reservation parsing
+  - `bedrock.ts`: AI priority judgment using Amazon Bedrock
+- **Types**: Shared TypeScript interfaces (`types/index.ts`)
+- **Express Server**: Local development server (`server.ts`)
 
-### 認証・セキュリティ
-- Amazon Cognito（ユーザー認証）
-- AWS IAM（アクセス管理）
-- HTTPS通信の暗号化
+### Infrastructure
+- **Terraform**: Infrastructure as Code in `terraform/` directory
+- **AWS Services**: Lambda, API Gateway, DynamoDB, S3, CloudFront, Cognito, Bedrock
+- **Environment Management**: Separate configurations for dev/staging/prod
 
-### インフラ管理
-- Terraform（Infrastructure as Code）
-- Next.js Build & Export の自動化
-- 管理対象：S3, CloudFront, Lambda, DynamoDB, API Gateway, Cognito, IAM
+## Development Patterns
 
-## 非機能要件
+### Error Handling
+- Use proper HTTP status codes
+- Include CORS headers in all responses
+- Provide user-friendly error messages in Japanese
+- Log errors appropriately for debugging
 
-### 性能要件
-- 自然言語入力から予約結果まで5秒以内の応答
+### Testing
+- Backend: Jest with TypeScript support
+- Frontend: Built-in Next.js testing capabilities
+- Test files: `__tests__/` directories
+- Coverage reporting available
 
-### 可用性
-- AWSマネージドサービスのSLAに基づく高可用性
+### Code Quality
+- ESLint with TypeScript support
+- Prettier for code formatting
+- Strict TypeScript configuration
+- Pre-commit hooks via CI scripts
 
-### セキュリティ
-- 最小権限の原則に基づくアクセス制御
-- 全通信のHTTPS暗号化
+### Natural Language Processing
+The system processes Japanese natural language input like "明日15時から3時間、V100を2台予約" (Reserve 2 V100 GPUs from 3 PM tomorrow for 3 hours) using Amazon Bedrock's Claude models.
 
-### UI/UX
-- 直感的で使いやすいインターフェース
-- ストレスフリーな拒否確認プロセス
+### AI Priority Judgment
+Uses Amazon Bedrock (Claude 3 Sonnet) to evaluate reservation conflicts and determine fair priority based on job importance and user history.
 
-## 将来的な拡張機能
+## Local Development URLs
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001
+- DynamoDB Admin: http://localhost:8001
+- DynamoDB Local: http://localhost:8000
 
-- 優先度判定ロジックの自己学習機能
-- SNS/SESによる外部通知連携
-- 利用パターン学習による自動優先度判定
+## Testing Strategy
+Always run the full CI suite before committing:
+```bash
+./scripts/ci.sh
+```
 
-## インフラのコード化
-
-Terraformによる管理対象リソース：
-- Amazon S3バケット（Next.js静的エクスポート用）
-- Amazon CloudFrontディストリビューション
-- AWS Lambda関数および設定
-- Amazon DynamoDBテーブル
-- Amazon API Gateway設定
-- Amazon Cognitoユーザープール
-- AWS IAMロール・ポリシー
-- CI/CDパイプライン（Next.js Build & Deploy）
-
-### Next.js デプロイメント戦略
-- `next export`による静的サイト生成
-- S3への自動デプロイ
-- CloudFrontキャッシュの無効化
-- 環境変数管理（開発・本番環境分離）
-
-### メリット
-- 再現性：複数環境の迅速・同一構築
-- バージョン管理：Git管理による変更履歴追跡
-- 自動化：Next.jsビルド・デプロイの完全自動化
-- 可視性：コードがドキュメントとして機能
-- モダンフロントエンド：React生態系とTypeScriptの活用
-
-## 対象ユーザー
-
-- **一般ユーザー**：GPUサーバーを利用する研究者・開発者
-- **管理者**：システム・サーバーリソース管理担当者
-
-## 期待効果
-
-- GPUサーバー運用効率の最大化
-- 公平でストレスのない予約体験の提供
-- 属人的な手動予約からの脱却
-- リソース使用率の向上
+This runs linting, type checking, tests, and builds for both frontend and backend to ensure code quality.
