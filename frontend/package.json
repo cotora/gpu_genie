@@ -5,19 +5,22 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "export": "next build && next export",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\""
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "vercel:deploy": "vercel",
+    "vercel:deploy:prod": "vercel --prod",
+    "vercel:env": "vercel env ls"
   },
   "dependencies": {
     "@aws-amplify/ui-react": "^6.11.2",
     "aws-amplify": "^6.15.1",
     "axios": "^1.10.0",
     "next": "15.3.4",
+    "playwright": "^1.53.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

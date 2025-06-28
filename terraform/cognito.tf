@@ -3,7 +3,8 @@ resource "aws_cognito_user_pool" "gpu_genie_pool" {
 
   username_attributes = ["email"]
 
-  auto_verified_attributes = ["email"]
+  # メール確認を無効化（学生アカウントのメール送信制限を回避）
+  # auto_verified_attributes = ["email"]
 
   password_policy {
     minimum_length    = 8
@@ -13,36 +14,36 @@ resource "aws_cognito_user_pool" "gpu_genie_pool" {
     require_uppercase = true
   }
 
+  # メール設定を改善
   email_configuration {
     email_sending_account = "COGNITO_DEFAULT"
+    # reply_to_email_address = "noreply@example.com"  # 必要に応じて設定
   }
 
-  verification_message_template {
-    default_email_option = "CONFIRM_WITH_CODE"
-    email_subject        = "GPU Genie - アカウント確認"
-    email_message        = "認証コード: {####} を入力してアカウントを確認してください。"
+  # メール確認を完全に無効化
+  # verification_message_template は削除
+
+  # アカウント復旧設定
+  account_recovery_setting {
+    recovery_mechanism {
+      name     = "verified_email"
+      priority = 1
+    }
   }
 
-  schema {
-    attribute_data_type = "String"
-    name                = "email"
-    required            = true
-    mutable             = true
+  # 管理者作成ユーザー設定
+  admin_create_user_config {
+    allow_admin_create_user_only = false
+    invite_message_template {
+      email_subject = "GPU Genie - アカウント招待"
+      email_message = "GPU Genieにご招待いたします。<br>ユーザー名: {username}<br>一時パスワード: {####}"
+      sms_message   = "GPU Genie招待: ユーザー名 {username} パスワード {####}"
+    }
   }
 
-  schema {
-    attribute_data_type = "String"
-    name                = "name"
-    required            = true
-    mutable             = true
-  }
-
-  schema {
-    attribute_data_type = "String"
-    name                = "role"
-    required            = false
-    mutable             = true
-  }
+  # 標準属性のみを使用（カスタムスキーマを削除）
+  # email と name は標準属性なので、schema ブロックで定義する必要がない
+  # role 属性は後でカスタム属性として追加可能
 
   tags = {
     Name = "${local.project_name}-user-pool-${var.environment}"
@@ -63,19 +64,32 @@ resource "aws_cognito_user_pool_client" "gpu_genie_client" {
 
   supported_identity_providers = ["COGNITO"]
 
-  callback_urls = [
-    "http://localhost:3000/auth/callback",
-    var.domain_name != "" ? "https://${var.domain_name}/auth/callback" : "https://${aws_cloudfront_distribution.frontend.domain_name}/auth/callback"
-  ]
+  # Vercelドメインとローカル開発用URLを両方サポート
+  callback_urls = concat(
+    [
+      "http://localhost:3000/auth/callback",
+      "http://localhost:3002/auth/callback"
+    ],
+    var.vercel_domain != "" ? ["https://${var.vercel_domain}/auth/callback"] : [],
+    var.domain_name != "" ? ["https://${var.domain_name}/auth/callback"] : []
+  )
 
-  logout_urls = [
-    "http://localhost:3000",
-    var.domain_name != "" ? "https://${var.domain_name}" : "https://${aws_cloudfront_distribution.frontend.domain_name}"
-  ]
+  logout_urls = concat(
+    [
+      "http://localhost:3000",
+      "http://localhost:3002"
+    ],
+    var.vercel_domain != "" ? ["https://${var.vercel_domain}"] : [],
+    var.domain_name != "" ? ["https://${var.domain_name}"] : []
+  )
 
-  allowed_oauth_flows                  = ["code"]
-  allowed_oauth_scopes                 = ["email", "openid", "profile"]
+  allowed_oauth_flows                  = ["code", "implicit"]
+  allowed_oauth_scopes                 = ["email", "openid", "profile", "aws.cognito.signin.user.admin"]
   allowed_oauth_flows_user_pool_client = true
+  
+  # CloudFrontでの認証をサポート
+  read_attributes = ["email", "name", "email_verified"]
+  write_attributes = ["email", "name"]
 
   prevent_user_existence_errors = "ENABLED"
 
@@ -93,12 +107,6 @@ resource "aws_cognito_user_pool_client" "gpu_genie_client" {
 resource "aws_cognito_user_pool_domain" "gpu_genie_domain" {
   domain       = "${local.project_name}-${var.environment}-${random_string.cognito_domain_suffix.result}"
   user_pool_id = aws_cognito_user_pool.gpu_genie_pool.id
-}
-
-resource "random_string" "cognito_domain_suffix" {
-  length  = 8
-  upper   = false
-  special = false
 }
 
 # Identity Pool (Federated Identities)
@@ -188,11 +196,12 @@ resource "aws_iam_role" "cognito_unauthenticated" {
 }
 
 # Identity Pool Role Attachment
-resource "aws_cognito_identity_pool_roles_attachment" "gpu_genie_roles" {
-  identity_pool_id = aws_cognito_identity_pool.gpu_genie_identity_pool.id
-
-  roles = {
-    "authenticated"   = aws_iam_role.cognito_authenticated.arn
-    "unauthenticated" = aws_iam_role.cognito_unauthenticated.arn
-  }
-}
+# Temporarily commented out due to IAM PassRole permission issues
+# resource "aws_cognito_identity_pool_roles_attachment" "gpu_genie_roles" {
+#   identity_pool_id = aws_cognito_identity_pool.gpu_genie_identity_pool.id
+#
+#   roles = {
+#     "authenticated"   = aws_iam_role.cognito_authenticated.arn
+#     "unauthenticated" = aws_iam_role.cognito_unauthenticated.arn
+#   }
+# }

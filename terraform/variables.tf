@@ -16,8 +16,20 @@ variable "domain_name" {
   default     = ""
 }
 
+variable "vercel_domain" {
+  description = "Vercel domain name for frontend hosting"
+  type        = string
+  default     = ""
+}
+
 variable "bedrock_model_id" {
   description = "Amazon Bedrock model ID for AI priority judgment"
   type        = string
-  default     = "anthropic.claude-3-sonnet-20240229-v1:0"
+  default     = "deepseek.r1-v1:0"
+}
+
+variable "aws_profile" {
+  description = "AWS profile name to use for deployment"
+  type        = string
+  default     = null
 }

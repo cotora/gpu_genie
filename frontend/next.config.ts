@@ -1,13 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Enable static exports for S3 deployment
-  output: 'export',
-  trailingSlash: true,
+  // Vercel deployment settings
+  output: undefined, // Use default output for Vercel
+  trailingSlash: false,
   
-  // Image optimization settings for static export
+  // Image optimization (Vercel supports this natively)
   images: {
-    unoptimized: true,
+    domains: ['d7g820aejy2tq.cloudfront.net'], // CloudFront domain for backward compatibility
+    formats: ['image/avif', 'image/webp'],
   },
   
   // Environment variables validation
@@ -19,10 +20,8 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_COGNITO_IDENTITY_POOL_ID: process.env.NEXT_PUBLIC_COGNITO_IDENTITY_POOL_ID,
   },
 
-  // Development settings
-  ...(process.env.NODE_ENV === 'development' && {
-    output: undefined, // Disable static export in development
-  }),
+  // Vercel-specific optimizations
+  serverExternalPackages: ['aws-amplify'],
 };
 
 export default nextConfig;

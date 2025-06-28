@@ -5,7 +5,6 @@ import {
   signIn as amplifySignIn,
   signUp as amplifySignUp,
   signOut as amplifySignOut,
-  confirmSignUp as amplifyConfirmSignUp,
   getCurrentUser,
 } from 'aws-amplify/auth'
 
@@ -20,9 +19,8 @@ interface AuthContextType {
   user: User | null
   isLoading: boolean
   signIn: (email: string, password: string) => Promise<unknown>
-  signUp: (email: string, password: string, name: string) => Promise<unknown>
+  signUp: (email: string, password: string, name: string) => Promise<{ success: boolean; message: string }>
   signOut: () => Promise<void>
-  confirmSignUp: (email: string, code: string) => Promise<unknown>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -32,7 +30,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    checkAuthState()
+    // Delay auth check to avoid hydration issues
+    const timer = setTimeout(() => {
+      checkAuthState()
+    }, 100)
+    
+    return () => clearTimeout(timer)
   }, [])
 
   const checkAuthState = async () => {
@@ -63,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // シンプルなサインアップ - 確認コードの画面は表示しない
   const signUp = async (email: string, password: string, name: string) => {
     try {
       const result = await amplifySignUp({
@@ -75,20 +79,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           },
         },
       })
-      return result
+
+      console.log('Sign up result:', result)
+
+      // 常に成功メッセージを返す（確認コードの処理はスキップ）
+      return { 
+        success: true, 
+        message: 'アカウントが作成されました。管理者の承認をお待ちください。しばらくしてからログインを試してください。' 
+      }
     } catch (error) {
       console.error('Sign up error:', error)
-      throw error
-    }
-  }
-
-  const confirmSignUp = async (email: string, code: string) => {
-    try {
-      const result = await amplifyConfirmSignUp({ username: email, confirmationCode: code })
-      return result
-    } catch (error) {
-      console.error('Confirm sign up error:', error)
-      throw error
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : 'アカウント作成に失敗しました' 
+      }
     }
   }
 
@@ -108,7 +112,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signIn,
     signUp,
     signOut,
-    confirmSignUp,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

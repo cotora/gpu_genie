@@ -1,5 +1,18 @@
 import { Amplify } from 'aws-amplify'
 
+// Validate required environment variables
+const requiredEnvVars = [
+  'NEXT_PUBLIC_AWS_REGION',
+  'NEXT_PUBLIC_COGNITO_USER_POOL_ID',
+  'NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID'
+]
+
+requiredEnvVars.forEach(envVar => {
+  if (!process.env[envVar]) {
+    console.error(`Missing required environment variable: ${envVar}`)
+  }
+})
+
 const awsConfig = {
   Auth: {
     Cognito: {
@@ -11,10 +24,10 @@ const awsConfig = {
       authenticationFlowType: 'USER_SRP_AUTH',
     },
   },
+  ssr: true, // Enable SSR support
 }
 
-if (typeof window !== 'undefined') {
-  Amplify.configure(awsConfig)
-}
+// Configure Amplify for both client and server
+Amplify.configure(awsConfig)
 
 export default awsConfig
