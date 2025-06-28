@@ -1,11 +1,9 @@
-name: CD (DISABLED)
+name: CD
 
 on:
-  # 自動デプロイを一旦無効化
-  # push:
-  #   branches: [main]
+  push:
+    branches: [main]
   
-  # 手動実行のみ許可（必要時のみ使用）
   workflow_dispatch:
     inputs:
       environment:
@@ -17,35 +15,15 @@ on:
           - dev
           - staging
           - prod
-      confirm_deploy:
-        description: 'Type "DEPLOY" to confirm manual deployment'
-        required: true
-        type: string
 
 env:
   NODE_VERSION: '18'
   TERRAFORM_VERSION: '~1.5'
 
 jobs:
-  # デプロイ確認ジョブを追加
-  confirm:
-    name: Confirm Manual Deployment
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Validate deployment confirmation
-        run: |
-          if [ "${{ github.event.inputs.confirm_deploy }}" != "DEPLOY" ]; then
-            echo "❌ Deployment not confirmed. Please type 'DEPLOY' in the confirm_deploy field."
-            echo "This is a safety measure to prevent accidental deployments."
-            exit 1
-          fi
-          echo "✅ Manual deployment confirmed for environment: ${{ github.event.inputs.environment }}"
-
   prepare:
     name: Prepare Build
     runs-on: ubuntu-latest
-    needs: confirm
 
     outputs:
       environment: ${{ steps.set-env.outputs.environment }}
@@ -323,7 +301,7 @@ jobs:
 
       - name: Notify deployment success
         run: |
-          echo "🚀 Manual deployment completed successfully!"
+          echo "🚀 Deployment completed successfully!"
           echo "Frontend URL: https://${{ needs.deploy-infrastructure.outputs.cloudfront-domain }}"
           echo "API URL: ${{ needs.deploy-infrastructure.outputs.api-gateway-url }}"
           echo "Environment: ${{ needs.prepare.outputs.environment }}"
@@ -333,6 +311,3 @@ jobs:
           echo "Cognito User Pool ID: ${{ needs.deploy-infrastructure.outputs.cognito-user-pool-id }}"
           echo "Cognito Client ID: ${{ needs.deploy-infrastructure.outputs.cognito-user-pool-client-id }}"
           echo "Cognito Identity Pool ID: ${{ needs.deploy-infrastructure.outputs.cognito-identity-pool-id }}"
-          echo ""
-          echo "⚠️  Note: Automatic deployment is currently disabled."
-          echo "Use manual deployment scripts in the 'scripts/' directory for regular deployments."
