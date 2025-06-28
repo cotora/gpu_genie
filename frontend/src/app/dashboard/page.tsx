@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from '@/components/DevAuthProvider'
+import { useAuth } from '@/components/AuthProvider'
 import { api } from '@/lib/api'
 
 interface Reservation {

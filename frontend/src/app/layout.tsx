@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { DevAuthProvider } from '@/components/DevAuthProvider'
+import { AuthProvider } from '@/components/AuthProvider'
 import Navigation from '@/components/Navigation'
+import '@/lib/aws-config'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -16,10 +17,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ja">
       <body className={inter.className}>
-        <DevAuthProvider>
+        <AuthProvider>
           <Navigation />
           {children}
-        </DevAuthProvider>
+        </AuthProvider>
       </body>
     </html>
   )

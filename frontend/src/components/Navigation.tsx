@@ -1,11 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { useAuth } from './DevAuthProvider'
+import { useRouter } from 'next/navigation'
+import { useAuth } from './AuthProvider'
 import { useState } from 'react'
 
 export default function Navigation() {
   const { user, signOut, isLoading } = useAuth()
+  const _router = useRouter() // eslint-disable-line @typescript-eslint/no-unused-vars
   const [showUserMenu, setShowUserMenu] = useState(false)
 
   const handleSignOut = async () => {
