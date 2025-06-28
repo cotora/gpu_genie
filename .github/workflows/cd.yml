@@ -16,6 +16,11 @@ on:
           - staging
           - prod
 
+# OIDC認証に必要な権限
+permissions:
+  id-token: write
+  contents: read
+
 env:
   NODE_VERSION: '18'
   TERRAFORM_VERSION: '~1.5'
@@ -100,6 +105,8 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE_NAME }}
           aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+          role-session-name: GitHubActions-${{ github.run_id }}
+          role-duration-seconds: 3600
 
       - name: Verify AWS connection
         run: |
@@ -198,24 +205,13 @@ jobs:
     environment: ${{ needs.prepare.outputs.environment }}
 
     steps:
-      - name: Check AWS credentials
-        run: |
-          if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then
-            echo "❌ AWS_ACCESS_KEY_ID is not set in GitHub secrets"
-            exit 1
-          fi
-          if [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
-            echo "❌ AWS_SECRET_ACCESS_KEY is not set in GitHub secrets"
-            exit 1
-          fi
-          echo "✅ AWS credentials are configured"
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE_NAME }}
           aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+          role-session-name: GitHubActions-Backend-${{ github.run_id }}
+          role-duration-seconds: 3600
 
       - name: Verify AWS connection
         run: |
@@ -255,24 +251,13 @@ jobs:
     environment: ${{ needs.prepare.outputs.environment }}
 
     steps:
-      - name: Check AWS credentials
-        run: |
-          if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then
-            echo "❌ AWS_ACCESS_KEY_ID is not set in GitHub secrets"
-            exit 1
-          fi
-          if [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
-            echo "❌ AWS_SECRET_ACCESS_KEY is not set in GitHub secrets"
-            exit 1
-          fi
-          echo "✅ AWS credentials are configured"
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE_NAME }}
           aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+          role-session-name: GitHubActions-Frontend-${{ github.run_id }}
+          role-duration-seconds: 3600
 
       - name: Verify AWS connection
         run: |
