@@ -3,8 +3,8 @@ resource "aws_cognito_user_pool" "gpu_genie_pool" {
 
   username_attributes = ["email"]
 
-  # メール確認を無効化（学生アカウントのメール送信制限を回避）
-  # auto_verified_attributes = ["email"]
+  # メール確認を有効化
+  auto_verified_attributes = ["email"]
 
   password_policy {
     minimum_length    = 8
@@ -20,8 +20,12 @@ resource "aws_cognito_user_pool" "gpu_genie_pool" {
     # reply_to_email_address = "noreply@example.com"  # 必要に応じて設定
   }
 
-  # メール確認を完全に無効化
-  # verification_message_template は削除
+  # メール確認テンプレート
+  verification_message_template {
+    default_email_option = "CONFIRM_WITH_CODE"
+    email_subject         = "GPU Genie - メールアドレス確認"
+    email_message         = "GPU Genieアカウント作成のためのメールアドレス確認コードは {####} です。"
+  }
 
   # アカウント復旧設定
   account_recovery_setting {

@@ -1,126 +1,125 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode, useMemo, useCallback } from 'react'
+import { Amplify } from 'aws-amplify'
+import awsConfig from '@/lib/aws-config'
 import {
-  signIn as amplifySignIn,
-  signUp as amplifySignUp,
-  signOut as amplifySignOut,
-  getCurrentUser,
+    signIn as amplifySignIn,
+    signUp as amplifySignUp,
+    signOut as amplifySignOut,
+    confirmSignUp as amplifyConfirmSignUp,
+    getCurrentUser,
+    fetchUserAttributes,
+    type SignUpOutput,
+    type SignInOutput,
 } from 'aws-amplify/auth'
 
-interface User {
-  username: string
-  email: string
-  name?: string
-  sub: string
+type User = {
+    username: string
+    email: string
+    name: string
 }
 
-interface AuthContextType {
-  user: User | null
-  isLoading: boolean
-  signIn: (email: string, password: string) => Promise<unknown>
-  signUp: (email: string, password: string, name: string) => Promise<{ success: boolean; message: string }>
-  signOut: () => Promise<void>
+type AuthContextType = {
+    user: User | null
+    isAuthenticated: boolean
+    signIn: (email: string, password: string) => Promise<SignInOutput>
+    signUp: (email: string, password: string, name: string) => Promise<SignUpOutput>
+    confirmSignUp: (
+        email: string,
+        confirmationCode: string
+    ) => Promise<{ success: boolean; message: string }>
+    signOut: () => Promise<void>
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+Amplify.configure(awsConfig)
+
+export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+    const [user, setUser] = useState<User | null>(null)
 
-  useEffect(() => {
-    // Delay auth check to avoid hydration issues
-    const timer = setTimeout(() => {
-      checkAuthState()
-    }, 100)
-    
-    return () => clearTimeout(timer)
-  }, [])
+    const checkUser = useCallback(async () => {
+        try {
+            const cognitoUser = await getCurrentUser()
+            const attributes = await fetchUserAttributes()
+            setUser({
+                username: cognitoUser.username,
+                email: attributes.email || '',
+                name: attributes.name || '',
+            })
+        } catch (error) {
+            // getCurrentUserは、未認証の場合にエラーをスローします。
+            // これは想定された動作なので、ユーザー状態をnullに設定するだけで問題ありません。
+            // console.error('Failed to check user auth state:', error) // 紛らわしいのでこの行を削除
+            setUser(null)
+        }
+    }, [])
 
-  const checkAuthState = async () => {
-    try {
-      const currentUser = await getCurrentUser()
-      setUser({
-        username: currentUser.username,
-        email: currentUser.signInDetails?.loginId || '',
-        name: currentUser.username,
-        sub: currentUser.userId,
-      })
-    } catch {
-      console.log('No authenticated user')
-      setUser(null)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+    useEffect(() => {
+        checkUser()
+    }, [checkUser])
 
-  const signIn = async (email: string, password: string) => {
-    try {
-      const result = await amplifySignIn({ username: email, password })
-      await checkAuthState()
-      return result
-    } catch (error) {
-      console.error('Sign in error:', error)
-      throw error
-    }
-  }
-
-  // シンプルなサインアップ - 確認コードの画面は表示しない
-  const signUp = async (email: string, password: string, name: string) => {
-    try {
-      const result = await amplifySignUp({
-        username: email,
-        password,
-        options: {
-          userAttributes: {
-            email,
-            name,
-          },
+    const handleSignIn = useCallback(
+        async (email: string, password: string): Promise<SignInOutput> => {
+            const result = await amplifySignIn({ username: email, password })
+            await checkUser()
+            return result
         },
-      })
+        [checkUser]
+    )
 
-      console.log('Sign up result:', result)
+    const handleSignUp = useCallback(
+        async (email: string, password: string, name: string): Promise<SignUpOutput> => {
+            return await amplifySignUp({
+                username: email,
+                password,
+                options: {
+                    userAttributes: {
+                        email,
+                        name,
+                    },
+                },
+            })
+        },
+        []
+    )
 
-      // 常に成功メッセージを返す（確認コードの処理はスキップ）
-      return { 
-        success: true, 
-        message: 'アカウントが作成されました。管理者の承認をお待ちください。しばらくしてからログインを試してください。' 
-      }
-    } catch (error) {
-      console.error('Sign up error:', error)
-      return { 
-        success: false, 
-        message: error instanceof Error ? error.message : 'アカウント作成に失敗しました' 
-      }
-    }
-  }
+    const handleConfirmSignUp = useCallback(
+        async (email: string, confirmationCode: string) => {
+            const result = await amplifyConfirmSignUp({
+                username: email,
+                confirmationCode,
+            })
+            return { success: result.isSignUpComplete, message: 'ユーザー登録が完了しました。ログインしてください。' }
+        },
+        []
+    )
 
-  const signOut = async () => {
-    try {
-      await amplifySignOut()
-      setUser(null)
-    } catch (error) {
-      console.error('Sign out error:', error)
-      throw error
-    }
-  }
+    const handleSignOut = useCallback(async () => {
+        await amplifySignOut()
+        setUser(null)
+    }, [])
 
-  const value = {
-    user,
-    isLoading,
-    signIn,
-    signUp,
-    signOut,
-  }
+    const value = useMemo(
+        () => ({
+            user,
+            isAuthenticated: !!user,
+            signIn: handleSignIn,
+            signUp: handleSignUp,
+            confirmSignUp: handleConfirmSignUp,
+            signOut: handleSignOut,
+        }),
+        [user, handleSignIn, handleSignUp, handleConfirmSignUp, handleSignOut]
+    )
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
+    const context = useContext(AuthContext)
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider')
+    }
+    return context
 }

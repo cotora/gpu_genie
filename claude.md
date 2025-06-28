@@ -8,9 +8,11 @@ GPU Genie is a serverless GPU server reservation management system that uses nat
 
 ### Architecture
 ```
-User → CloudFront → S3 (Next.js static) → API Gateway → Lambda → DynamoDB
-                                                      ↓
-                                               Amazon Bedrock (AI)
+User → Vercel (Next.js) → API Gateway → Lambda → DynamoDB
+                               ↓
+                        Amazon Bedrock (AI)
+                               ↓
+                        Amazon Cognito (Auth)
 ```
 
 ## Development Commands
@@ -27,18 +29,22 @@ docker-compose logs -f
 docker-compose down
 ```
 
-### Frontend (Next.js)
+### Frontend (Next.js + Vercel)
 ```bash
 cd frontend
 npm install
-npm run dev          # Development server (with turbopack)
-npm run build        # Production build
-npm run export       # Static export for S3
-npm run lint         # ESLint check
-npm run lint:fix     # Auto-fix linting issues
-npm run type-check   # TypeScript type checking
-npm run format       # Format with Prettier
-npm run format:check # Check formatting
+npm run dev              # Development server (with turbopack)
+npm run build            # Production build
+npm run lint             # ESLint check
+npm run lint:fix         # Auto-fix linting issues
+npm run type-check       # TypeScript type checking
+npm run format           # Format with Prettier
+npm run format:check     # Check formatting
+
+# Vercel deployment
+npm run vercel:deploy    # Deploy to preview
+npm run vercel:deploy:prod # Deploy to production
+npm run vercel:env       # List environment variables
 ```
 
 ### Backend (Lambda)
@@ -77,6 +83,27 @@ npm run format:check # Check formatting
 ```
 
 ### Deployment
+
+#### Vercel Frontend Deployment
+```bash
+# Install Vercel CLI (first time only)
+npm install -g vercel
+
+# Deploy to Vercel
+cd frontend
+vercel login                     # Login to Vercel (first time only)
+vercel                          # Deploy to preview
+vercel --prod                   # Deploy to production
+
+# Environment variables setup
+vercel env add NEXT_PUBLIC_AWS_REGION
+vercel env add NEXT_PUBLIC_API_GATEWAY_URL
+vercel env add NEXT_PUBLIC_COGNITO_USER_POOL_ID
+vercel env add NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID
+vercel env add NEXT_PUBLIC_COGNITO_IDENTITY_POOL_ID
+```
+
+#### AWS Backend Deployment
 ```bash
 # Manual deployment (for AWS CloudShell)
 ./scripts/deploy.sh dev           # Deploy to dev environment
@@ -85,8 +112,11 @@ npm run format:check # Check formatting
 
 # Individual deployment tasks
 ./scripts/deploy-utils.sh deploy-infra dev      # Infrastructure only
-./scripts/deploy-utils.sh deploy-frontend dev   # Frontend only
 ./scripts/deploy-utils.sh deploy-backend dev    # Backend only
+
+# Update Cognito for Vercel domain
+cd terraform
+terraform apply -var="vercel_domain=your-app.vercel.app"
 ```
 
 ### Database Setup
