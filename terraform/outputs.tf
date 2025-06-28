@@ -40,6 +40,8 @@ output "cognito_config" {
     user_pool_client_id = aws_cognito_user_pool_client.gpu_genie_client.id
     identity_pool_id    = aws_cognito_identity_pool.gpu_genie_identity_pool.id
     domain              = aws_cognito_user_pool_domain.gpu_genie_domain.domain
+    hosted_ui_url       = "https://${aws_cognito_user_pool_domain.gpu_genie_domain.domain}.auth.${var.aws_region}.amazoncognito.com"
     region              = var.aws_region
+    cloudfront_domain   = aws_cloudfront_distribution.frontend.domain_name
   }
 }

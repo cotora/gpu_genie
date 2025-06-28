@@ -82,7 +82,6 @@ resource "aws_lambda_function" "reservations_handler" {
       USERS_TABLE        = aws_dynamodb_table.users.name
       GPU_SERVERS_TABLE  = aws_dynamodb_table.gpu_servers.name
       BEDROCK_MODEL_ID   = var.bedrock_model_id
-      AWS_REGION         = var.aws_region
     }
   }
 
@@ -106,7 +105,6 @@ resource "aws_lambda_function" "get_reservations_handler" {
       RESERVATIONS_TABLE = aws_dynamodb_table.reservations.name
       USERS_TABLE        = aws_dynamodb_table.users.name
       GPU_SERVERS_TABLE  = aws_dynamodb_table.gpu_servers.name
-      AWS_REGION         = var.aws_region
     }
   }
 
@@ -130,7 +128,6 @@ resource "aws_lambda_function" "update_reservation_handler" {
       RESERVATIONS_TABLE = aws_dynamodb_table.reservations.name
       USERS_TABLE        = aws_dynamodb_table.users.name
       GPU_SERVERS_TABLE  = aws_dynamodb_table.gpu_servers.name
-      AWS_REGION         = var.aws_region
     }
   }
 
@@ -154,7 +151,6 @@ resource "aws_lambda_function" "users_handler" {
       RESERVATIONS_TABLE = aws_dynamodb_table.reservations.name
       USERS_TABLE        = aws_dynamodb_table.users.name
       GPU_SERVERS_TABLE  = aws_dynamodb_table.gpu_servers.name
-      AWS_REGION         = var.aws_region
     }
   }
 
@@ -178,7 +174,6 @@ resource "aws_lambda_function" "get_user_handler" {
       RESERVATIONS_TABLE = aws_dynamodb_table.reservations.name
       USERS_TABLE        = aws_dynamodb_table.users.name
       GPU_SERVERS_TABLE  = aws_dynamodb_table.gpu_servers.name
-      AWS_REGION         = var.aws_region
     }
   }
 

@@ -5,6 +5,14 @@
 
 set -e  # エラーが発生した場合にスクリプトを終了
 
+# AWSプロファイル設定
+AWS_PROFILE_FLAG=""
+TERRAFORM_PROFILE_VAR=""
+if [ -n "$AWS_PROFILE" ]; then
+    AWS_PROFILE_FLAG="--profile $AWS_PROFILE"
+    TERRAFORM_PROFILE_VAR="-var=aws_profile=$AWS_PROFILE"
+fi
+
 # 色付きの出力用
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -135,7 +143,8 @@ deploy_infrastructure() {
     log_info "Creating Terraform plan..."
     terraform plan \
         -var="environment=$ENVIRONMENT" \
-        -var="aws_region=$(aws configure get region)" \
+        -var="aws_region=$(aws configure get region $AWS_PROFILE_FLAG)" \
+        $TERRAFORM_PROFILE_VAR \
         -out=tfplan
     
     # Terraformの適用
@@ -186,7 +195,7 @@ deploy_backend() {
         aws lambda update-function-code \
             --function-name "$function" \
             --zip-file fileb://backend/lambda/lambda-function.zip \
-            --region $(aws configure get region) || log_warning "Function $function not found, skipping..."
+            --region $(aws configure get region $AWS_PROFILE_FLAG) $AWS_PROFILE_FLAG || log_warning "Function $function not found, skipping..."
     done
     
     log_success "Backend deployment completed"
@@ -236,7 +245,7 @@ deploy_frontend() {
         --cache-control "public,max-age=31536000,immutable" \
         --exclude "*.html" \
         --exclude "service-worker.js" \
-        --exclude "manifest.json"
+        --exclude "manifest.json" $AWS_PROFILE_FLAG
     
     # HTMLファイル（短期キャッシュ）
     aws s3 sync ./frontend/out s3://$S3_BUCKET_NAME \
@@ -244,21 +253,19 @@ deploy_frontend() {
         --cache-control "public,max-age=0,must-revalidate" \
         --include "*.html" \
         --include "service-worker.js" \
-        --include "manifest.json"
+        --include "manifest.json" $AWS_PROFILE_FLAG
     
     # CloudFrontキャッシュの無効化
     log_info "Invalidating CloudFront cache..."
-    DISTRIBUTION_ID=$(aws cloudfront list-distributions \
-        --query "DistributionList.Items[?Origins.Items[0].DomainName=='$S3_BUCKET_NAME.s3.amazonaws.com'].Id" \
-        --output text)
+    CLOUDFRONT_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Aliases.Items!=null && contains(Aliases.Items, '$CLOUDFRONT_DOMAIN')].Id" --output text $AWS_PROFILE_FLAG)
     
-    if [ ! -z "$DISTRIBUTION_ID" ]; then
-        aws cloudfront create-invalidation \
-            --distribution-id "$DISTRIBUTION_ID" \
-            --paths "/*"
-        log_success "CloudFront cache invalidation initiated"
+    if [ -z "$CLOUDFRONT_ID" ]; then
+        log_warning "CloudFront distribution not found for domain $CLOUDFRONT_DOMAIN. Skipping invalidation."
     else
-        log_warning "CloudFront distribution not found"
+        aws cloudfront create-invalidation \
+            --distribution-id $CLOUDFRONT_ID \
+            --paths "/*" $AWS_PROFILE_FLAG
+        log_success "CloudFront cache invalidation requested"
     fi
     
     log_success "Frontend deployment completed"

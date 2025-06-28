@@ -11,7 +11,7 @@ source "$SCRIPT_DIR/deploy.sh"
 show_usage() {
     echo "GPU Genie Deployment Utilities"
     echo ""
-    echo "Usage: $0 <command> [environment]"
+    echo "Usage: $0 <command> [environment] [--profile <aws_profile>]"
     echo ""
     echo "Commands:"
     echo "  check          - 必要なツールの確認"
@@ -29,10 +29,13 @@ show_usage() {
     echo ""
     echo "Environment: dev (default), staging, prod"
     echo ""
+    echo "Options:"
+    echo "  --profile <name> - Use a specific AWS profile from your config"
+    echo ""
     echo "Examples:"
     echo "  $0 check"
     echo "  $0 build-backend dev"
-    echo "  $0 deploy-infra staging"
+    echo "  $0 deploy-infra staging --profile my-aws-profile"
     echo "  $0 outputs prod"
 }
 
@@ -79,14 +82,15 @@ destroy_infrastructure() {
         S3_BUCKET=$(terraform output -raw s3_bucket_name 2>/dev/null || echo "")
         if [ ! -z "$S3_BUCKET" ]; then
             log_info "Emptying S3 bucket: $S3_BUCKET"
-            aws s3 rm s3://$S3_BUCKET --recursive || log_warning "Failed to empty S3 bucket"
+            aws s3 rm s3://$S3_BUCKET --recursive $AWS_PROFILE_FLAG || log_warning "Failed to empty S3 bucket"
         fi
     fi
     
     # Terraformで削除
     terraform destroy \
         -var="environment=$ENVIRONMENT" \
-        -var="aws_region=$(aws configure get region)" \
+        -var="aws_region=$(aws configure get region $AWS_PROFILE_FLAG)" \
+        $TERRAFORM_PROFILE_VAR \
         -auto-approve
     
     log_success "Infrastructure destroyed successfully"
@@ -126,11 +130,11 @@ show_lambda_logs() {
         --descending \
         --max-items 1 \
         --query 'logStreams[0].logStreamName' \
-        --output text | xargs -I {} aws logs get-log-events \
+        --output text $AWS_PROFILE_FLAG | xargs -I {} aws logs get-log-events \
         --log-group-name "$LOG_GROUP" \
         --log-stream-name {} \
         --query 'events[*].[timestamp,message]' \
-        --output table
+        --output table $AWS_PROFILE_FLAG
 }
 
 # デプロイ状況の確認
@@ -168,7 +172,7 @@ check_deployment_status() {
     )
     
     for function in "${FUNCTIONS[@]}"; do
-        if aws lambda get-function --function-name "$function" > /dev/null 2>&1; then
+        if aws lambda get-function --function-name "$function" $AWS_PROFILE_FLAG > /dev/null 2>&1; then
             log_success "✓ $function"
         else
             log_error "✗ $function"
@@ -185,11 +189,11 @@ check_deployment_status() {
         CLOUDFRONT_DOMAIN=$(terraform output -raw cloudfront_domain_name 2>/dev/null || echo "")
         
         if [ ! -z "$S3_BUCKET" ]; then
-            if aws s3api head-bucket --bucket "$S3_BUCKET" > /dev/null 2>&1; then
+            if aws s3api head-bucket --bucket "$S3_BUCKET" $AWS_PROFILE_FLAG > /dev/null 2>&1; then
                 log_success "✓ S3 Bucket: $S3_BUCKET"
                 
                 # ファイル数を確認
-                FILE_COUNT=$(aws s3 ls s3://$S3_BUCKET --recursive | wc -l)
+                FILE_COUNT=$(aws s3 ls s3://$S3_BUCKET --recursive $AWS_PROFILE_FLAG | wc -l)
                 echo "  Files: $FILE_COUNT"
             else
                 log_error "✗ S3 Bucket: $S3_BUCKET"
@@ -244,8 +248,33 @@ EOF
 
 # メイン処理
 main() {
+    # 引数解析
+    POSITIONAL_ARGS=()
+    while [[ $# -gt 0 ]]; do
+      case $1 in
+        --profile)
+          export AWS_PROFILE="$2"
+          shift 2
+          ;;
+        *)
+          POSITIONAL_ARGS+=("$1")
+          shift
+          ;;
+      esac
+    done
+    set -- "${POSITIONAL_ARGS[@]}"
+
     COMMAND=${1:-help}
     ENVIRONMENT=${2:-dev}
+
+    # AWSプロファイル設定
+    AWS_PROFILE_FLAG=""
+    TERRAFORM_PROFILE_VAR=""
+    if [ -n "$AWS_PROFILE" ]; then
+        log_info "Using AWS Profile: $AWS_PROFILE"
+        AWS_PROFILE_FLAG="--profile $AWS_PROFILE"
+        TERRAFORM_PROFILE_VAR="-var=aws_profile=$AWS_PROFILE"
+    fi
     
     case $COMMAND in
         "check")
@@ -284,6 +313,8 @@ main() {
             destroy_infrastructure
             ;;
         "logs")
+            shift # command
+            shift # env
             show_lambda_logs "$@"
             ;;
         "status")
