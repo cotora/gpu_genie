@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 email: attributes.email || '',
                 name: attributes.name || '',
             })
-        } catch (error) {
+        } catch {
             // getCurrentUserは、未認証の場合にエラーをスローします。
             // これは想定された動作なので、ユーザー状態をnullに設定するだけで問題ありません。
             // console.error('Failed to check user auth state:', error) // 紛らわしいのでこの行を削除

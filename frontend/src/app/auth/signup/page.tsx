@@ -65,17 +65,17 @@ export default function SignUp() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-md w-full space-y-8">
+        <div className="min-h-screen bg-[#F0F0F3] flex items-center justify-center p-4">
+            <div className="w-full max-w-md p-8 space-y-8 bg-[#F0F0F3] rounded-3xl shadow-neumorphism">
                 <div>
-                    <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                    <h2 className="text-3xl font-bold text-center text-gray-800">
                         {step === 'signup' ? 'GPU Genieに新規登録' : '確認コードを入力'}
                     </h2>
-                    <p className="mt-2 text-center text-sm text-gray-600">
+                    <p className="mt-2 text-sm text-center text-gray-600">
                         {step === 'signup' && (
                             <>
                                 すでにアカウントをお持ちの方は{' '}
-                                <Link href="/auth/signin" className="font-medium text-blue-600 hover:text-blue-500">
+                                <Link href="/auth/signin" className="font-medium text-orange-600 hover:text-orange-500">
                                     ログイン
                                 </Link>
                             </>
@@ -84,23 +84,20 @@ export default function SignUp() {
                 </div>
 
                 {step === 'signup' ? (
-                    <form className="mt-8 space-y-6" onSubmit={handleSignUp}>
+                    <form className="space-y-6" onSubmit={handleSignUp}>
                         {message && !isSuccess && (
-                            <div className="px-4 py-3 rounded-md bg-red-50 border border-red-200 text-red-700">
+                            <div className="p-3 text-center rounded-xl bg-red-100 border border-red-200 text-red-700 text-sm shadow-inner">
                                 {message}
                             </div>
                         )}
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                             <div>
-                                <label htmlFor="name" className="sr-only">
-                                    名前
-                                </label>
                                 <input
                                     id="name"
                                     name="name"
                                     type="text"
                                     required
-                                    className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-4 py-3 bg-[#F0F0F3] rounded-xl text-gray-700 placeholder-gray-500 border-none focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 shadow-neumorphism-inset"
                                     placeholder="名前"
                                     value={name}
                                     onChange={e => setName(e.target.value)}
@@ -108,16 +105,13 @@ export default function SignUp() {
                                 />
                             </div>
                             <div>
-                                <label htmlFor="email" className="sr-only">
-                                    メールアドレス
-                                </label>
                                 <input
                                     id="email"
                                     name="email"
                                     type="email"
                                     autoComplete="email"
                                     required
-                                    className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-4 py-3 bg-[#F0F0F3] rounded-xl text-gray-700 placeholder-gray-500 border-none focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 shadow-neumorphism-inset"
                                     placeholder="メールアドレス"
                                     value={email}
                                     onChange={e => setEmail(e.target.value)}
@@ -125,17 +119,14 @@ export default function SignUp() {
                                 />
                             </div>
                             <div>
-                                <label htmlFor="password" className="sr-only">
-                                    パスワード
-                                </label>
                                 <input
                                     id="password"
                                     name="password"
                                     type="password"
                                     autoComplete="new-password"
                                     required
-                                    className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="パスワード（8文字以上、大小英数字・記号を含む）"
+                                    className="w-full px-4 py-3 bg-[#F0F0F3] rounded-xl text-gray-700 placeholder-gray-500 border-none focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 shadow-neumorphism-inset"
+                                    placeholder="パスワード"
                                     value={password}
                                     onChange={e => setPassword(e.target.value)}
                                     disabled={isLoading}
@@ -147,12 +138,11 @@ export default function SignUp() {
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                className="w-full py-3 px-4 font-bold text-white bg-neu-orange rounded-lg shadow-neu-outset hover:shadow-neumorphism-button-orange-inset transition-shadow disabled:bg-gray-400 disabled:shadow-none disabled:cursor-not-allowed"
                             >
                                 {isLoading ? (
-                                    <div className="flex items-center">
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                        登録中...
+                                    <div className="flex items-center justify-center">
+                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                                     </div>
                                 ) : (
                                     '新規登録'
@@ -161,33 +151,30 @@ export default function SignUp() {
                         </div>
                     </form>
                 ) : (
-                    <form className="mt-8 space-y-6" onSubmit={handleConfirmSignUp}>
+                    <form className="space-y-6" onSubmit={handleConfirmSignUp}>
                         {message && (
-                            <div className={`px-4 py-3 rounded-md ${isSuccess
-                                ? 'bg-green-50 border border-green-200 text-green-700'
-                                : 'bg-red-50 border border-red-200 text-red-700'
+                            <div className={`p-4 text-center rounded-xl shadow-inner ${isSuccess
+                                ? 'bg-green-100 border border-green-200 text-green-800'
+                                : 'bg-red-100 border border-red-200 text-red-700'
                                 }`}>
                                 {message}
                                 {isSuccess && (
-                                    <div className="text-center mt-2">
-                                        <Link href="/auth/signin" className="text-blue-600 hover:text-blue-500 font-medium">
+                                    <div className="mt-4">
+                                        <Link href="/auth/signin" className="font-bold text-orange-600 hover:text-orange-500">
                                             ログインページへ
                                         </Link>
                                     </div>
                                 )}
                             </div>
                         )}
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                             <div>
-                                <label htmlFor="confirmationCode" className="sr-only">
-                                    確認コード
-                                </label>
                                 <input
                                     id="confirmationCode"
                                     name="confirmationCode"
                                     type="text"
                                     required
-                                    className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-4 py-3 bg-[#F0F0F3] rounded-xl text-gray-700 placeholder-gray-500 border-none focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 shadow-neumorphism-inset"
                                     placeholder="確認コード"
                                     value={confirmationCode}
                                     onChange={e => setConfirmationCode(e.target.value)}
@@ -199,12 +186,11 @@ export default function SignUp() {
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                className="w-full py-3 px-4 font-bold text-white bg-neu-orange rounded-lg shadow-neu-outset hover:shadow-neumorphism-button-orange-inset transition-shadow disabled:bg-gray-400 disabled:shadow-none disabled:cursor-not-allowed"
                             >
                                 {isLoading ? (
-                                    <div className="flex items-center">
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                        確認中...
+                                    <div className="flex items-center justify-center">
+                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                                     </div>
                                 ) : (
                                     'アカウントを有効化'

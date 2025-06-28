@@ -20,11 +20,11 @@ export default function Navigation() {
     }
 
     return (
-        <nav className="bg-white shadow-sm border-b">
+        <nav className="bg-neu-bg shadow-neu-outset">
             <div className="container mx-auto px-4">
                 <div className="flex justify-between items-center h-16">
                     <div className="flex items-center">
-                        <Link href="/" className="text-xl font-bold text-gray-800">
+                        <Link href="/" className="text-xl font-bold text-neu-text">
                             GPU Genie
                         </Link>
                     </div>
@@ -34,20 +34,20 @@ export default function Navigation() {
                             <>
                                 <Link
                                     href="/reservations"
-                                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                                    className="text-neu-text hover:text-neu-orange px-3 py-2 rounded-md text-sm font-medium"
                                 >
                                     予約管理
                                 </Link>
                                 <Link
                                     href="/dashboard"
-                                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                                    className="text-neu-text hover:text-neu-orange px-3 py-2 rounded-md text-sm font-medium"
                                 >
                                     ダッシュボード
                                 </Link>
                                 <div className="ml-4">
                                     <Link
                                         href="/reservations"
-                                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                                        className="inline-block bg-neu-orange text-white px-6 py-2 rounded-lg shadow-neu-outset hover:shadow-neumorphism-button-orange-inset transition-shadow text-sm"
                                     >
                                         予約を作成
                                     </Link>
@@ -56,7 +56,7 @@ export default function Navigation() {
                                 <div className="relative">
                                     <button
                                         onClick={() => setShowUserMenu(!showUserMenu)}
-                                        className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                                        className="flex items-center space-x-2 text-neu-text hover:text-neu-orange px-3 py-2 rounded-md text-sm font-medium"
                                     >
                                         <span>{user?.name || user?.email}</span>
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -70,11 +70,11 @@ export default function Navigation() {
                                     </button>
 
                                     {showUserMenu && (
-                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                                            <div className="px-4 py-2 text-sm text-gray-500 border-b">{user?.email}</div>
+                                        <div className="absolute right-0 mt-2 w-48 bg-neu-bg rounded-md shadow-neu-outset py-1 z-50">
+                                            <div className="px-4 py-2 text-sm text-neu-text border-b border-neu-dark">{user?.email}</div>
                                             <button
                                                 onClick={handleSignOut}
-                                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                className="block w-full text-left px-4 py-2 text-sm text-neu-text hover:bg-neu-light"
                                             >
                                                 ログアウト
                                             </button>
@@ -83,20 +83,20 @@ export default function Navigation() {
                                 </div>
                             </>
                         ) : (
-                            <>
+                            <div className="flex items-center space-x-4">
                                 <Link
                                     href="/auth/signin"
-                                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                                    className="inline-block bg-neu-orange text-white px-6 py-2 rounded-lg shadow-neu-outset hover:shadow-neumorphism-button-orange-inset transition-shadow text-sm"
                                 >
                                     ログイン
                                 </Link>
                                 <Link
                                     href="/auth/signup"
-                                    className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
+                                    className="inline-block bg-neu-orange text-white px-6 py-2 rounded-lg shadow-neu-outset hover:shadow-neumorphism-button-orange-inset transition-shadow text-sm"
                                 >
                                     新規登録
                                 </Link>
-                            </>
+                            </div>
                         )}
                     </div>
                 </div>
